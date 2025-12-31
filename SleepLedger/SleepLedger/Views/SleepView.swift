@@ -1,10 +1,3 @@
-//
-//  SleepView.swift
-//  SleepLedger
-//
-//  Main sleep tracking dashboard - Rebuilt for total UI overhaul
-//
-
 import SwiftUI
 import SwiftData
 
@@ -18,74 +11,78 @@ struct SleepView: View {
         let context = ModelContext(ModelContainer.shared)
         _trackingService = StateObject(wrappedValue: SleepTrackingService(modelContext: context))
     }
-        var body: some View {
-        GeometryReader { outerGeometry in
-            ZStack {
-                // Abstract Background Ambience
-                backgroundAmbience
-                
-                ScrollView {
-                    VStack(spacing: outerGeometry.size.height * 0.03) {
-                        // Header
-                        headerSection
-                            .padding(.top, 20)
-                        
-                        // Calculated Metrics (using @Query data to avoid blocking fetches)
-                        let filtered = allSessions.filter { $0.endTime != nil }
-                        let recentSessions = filtered.filter { $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())! }
-                        
-                        let totalDebt = recentSessions.compactMap { $0.sleepDebt }.reduce(0, +)
-                        let hours = Int(abs(totalDebt))
-                        let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
-                        let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
-                        
-                        let avgDuration = recentSessions.isEmpty ? 0 : (recentSessions.compactMap { $0.durationInHours }.reduce(0, +) / Double(recentSessions.count))
-                        let avgQuality = recentSessions.isEmpty ? 0 : (recentSessions.compactMap { $0.sleepQualityScore }.reduce(0, +) / Double(recentSessions.count))
-                        
-                        // Sleep Debt Ring
-                        let ringSize = min(outerGeometry.size.width * 0.6, outerGeometry.size.height * 0.28)
-                        
-                        SleepDebtRing(
-                            debtHours: hours,
-                            debtMinutes: minutes,
-                            progress: progress,
-                            isDeficit: totalDebt < 0
-                        )
-                        .frame(width: ringSize, height: ringSize)
-                        .padding(.vertical, 10)
-                        
-                        // Stats Row (Passing pre-calculated values)
-                        HStack(spacing: 8) {
-                            StatChip(label: "Average", value: formatDuration(avgDuration))
-                            StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
-                            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
-                        }
-                        
-                        // Main Action Button
-                        PulseButton(isTracking: trackingService.isTracking) {
-                            handlePunchAction()
-                        }
-                        .scaleEffect(outerGeometry.size.height < 700 ? 0.85 : 1.0)
-                        .padding(.vertical, 5)
-                        
-                        // Recent Session Card
-                        if let lastSession = filtered.first {
-                            TactileTimeCard(lastSession: lastSession)
-                                .scaleEffect(outerGeometry.size.height < 700 ? 0.9 : 1.0)
-                        }
-                        
-                        Spacer(minLength: 120)
+    
+    var body: some View {
+        ZStack {
+            backgroundAmbience
+            
+            ScrollView {
+                VStack(spacing: 24) {          // fixed spacing instead of geometry-based
+                    headerSection
+                        .padding(.top, 20)
+                    
+                    // --- Metrics ---
+                    let filtered = allSessions.filter { $0.endTime != nil }
+                    let recentSessions = filtered.filter {
+                        $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())!
                     }
-                    .padding(.horizontal, 20)
+                    
+                    let totalDebt = recentSessions.compactMap { $0.sleepDebt }.reduce(0, +)
+                    let hours = Int(abs(totalDebt))
+                    let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
+                    let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
+                    
+                    let avgDuration = recentSessions.isEmpty
+                        ? 0
+                        : (recentSessions.compactMap { $0.durationInHours }.reduce(0, +)
+                           / Double(recentSessions.count))
+                    let avgQuality = recentSessions.isEmpty
+                        ? 0
+                        : (recentSessions.compactMap { $0.sleepQualityScore }.reduce(0, +)
+                           / Double(recentSessions.count))
+                    
+                    // Sleep Debt Ring
+                    SleepDebtRing(
+                        debtHours: hours,
+                        debtMinutes: minutes,
+                        progress: progress,
+                        isDeficit: totalDebt < 0
+                    )
+                    .frame(maxWidth: 260, maxHeight: 260)  // cap the size
+                    .frame(maxWidth: .infinity)            // center horizontally
+                    .padding(.vertical, 10)
+                    
+                    // Stats row
+                    HStack(spacing: 8) {
+                        StatChip(label: "Average", value: formatDuration(avgDuration))
+                        StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
+                        StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
+                    }
+                    
+                    // Main action button
+                    PulseButton(isTracking: trackingService.isTracking) {
+                        handlePunchAction()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 5)
+                    
+                    // Recent session card
+                    if let lastSession = filtered.first {
+                        TactileTimeCard(lastSession: lastSession)
+                    }
+                    
+                    Spacer(minLength: 80)
                 }
-                .scrollIndicators(.hidden)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
             }
+            .scrollIndicators(.hidden)
         }
         .background(Color.sleepBackground)
         .ignoresSafeArea(.all, edges: .top)
     }
     
-    // MARK: - Background Components
+    // MARK: - Background
     
     private var backgroundAmbience: some View {
         ZStack {
