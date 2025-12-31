@@ -121,7 +121,7 @@ struct SleepView: View {
     // MARK: - Stats Summary
     
     private var statsSummaryRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             StatChip(label: "Average", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
             StatChip(label: "Quality", value: String(format: "%.0f%%", trackingService.getAverageSleepQuality(days: 7)))
             StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
@@ -192,9 +192,15 @@ struct StatChip: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 4)
-        .sleepGlassPanel()
+        .frame(height: 68)
+        .padding(12)
+        .background(.ultraThinMaterial.opacity(0.5))
+        .background(Color.sleepGlassBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.sleepGlassBorder, lineWidth: 1)
+        )
     }
 }
 
