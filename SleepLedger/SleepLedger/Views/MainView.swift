@@ -2,7 +2,7 @@
 //  MainView.swift
 //  SleepLedger
 //
-//  Main navigation container
+//  Main navigation - optimized 2-tab structure
 //
 
 import SwiftUI
@@ -14,29 +14,17 @@ struct MainView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            DashboardView()
+            SleepView()
                 .tabItem {
-                    Label("Dashboard", systemImage: "moon.stars.fill")
+                    Label("Sleep", systemImage: "moon.stars.fill")
                 }
                 .tag(0)
             
-            HistoryView()
+            JournalView()
                 .tabItem {
-                    Label("History", systemImage: "chart.bar.fill")
+                    Label("Journal", systemImage: "book.fill")
                 }
                 .tag(1)
-            
-            StatisticsView()
-                .tabItem {
-                    Label("Stats", systemImage: "chart.line.uptrend.xyaxis")
-                }
-                .tag(2)
-            
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
-                .tag(3)
         }
         .tint(.sleepPrimary)
         .fullScreenCover(isPresented: $showingOnboarding) {
