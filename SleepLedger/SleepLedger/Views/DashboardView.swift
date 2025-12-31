@@ -30,6 +30,11 @@ struct DashboardView: View {
                     // Main Punch In/Out Button
                     punchButton
                     
+                    // Alarm Settings Info (when not tracking)
+                    if !trackingService.isTracking {
+                        alarmInfoCard
+                    }
+                    
                     // Current Session Info
                     if trackingService.isTracking, let session = trackingService.currentSession {
                         currentSessionCard(session: session)
@@ -206,6 +211,53 @@ struct DashboardView: View {
         }
         .padding()
         .sleepCard()
+    }
+    
+    // MARK: - Alarm Info Card
+    
+    private var alarmInfoCard: some View {
+        NavigationLink(destination: SettingsView()) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "alarm.fill")
+                        .foregroundColor(.sleepPrimary)
+                    Text("Smart Alarm")
+                        .font(.headline)
+                        .foregroundColor(.sleepTextPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.sleepTextTertiary)
+                }
+                
+                let smartAlarmEnabled = UserDefaults.standard.bool(forKey: "smartAlarmEnabled")
+                let wakeTimeInterval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
+                
+                if smartAlarmEnabled && wakeTimeInterval > 0 {
+                    let wakeTime = Date(timeIntervalSinceReferenceDate: wakeTimeInterval)
+                    HStack {
+                        Text("Wake at")
+                            .font(.subheadline)
+                            .foregroundColor(.sleepTextSecondary)
+                        Text(wakeTime.formatted(date: .omitted, time: .shortened))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.sleepPrimary)
+                    }
+                    
+                    Text("30 min window for light sleep")
+                        .font(.caption)
+                        .foregroundColor(.sleepTextSecondary)
+                } else {
+                    Text("Tap to configure alarm in Settings")
+                        .font(.subheadline)
+                        .foregroundColor(.sleepTextSecondary)
+                }
+            }
+            .padding()
+            .sleepCard()
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Smart Alarm Sheet
