@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
     @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
@@ -13,6 +14,10 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
     
     @State private var showingAbout = false
+    @State private var showingClearAlert = false
+    
+    @Environment(\.modelContext) private var modelContext
+    @Query private var sessions: [SleepSession]
     
     var body: some View {
         NavigationStack {
@@ -37,6 +42,14 @@ struct SettingsView: View {
             .background(Color.sleepBackground)
             .sheet(isPresented: $showingAbout) {
                 AboutView()
+            }
+            .alert("Clear All History?", isPresented: $showingClearAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear", role: .destructive) {
+                    clearAllHistory()
+                }
+            } message: {
+                Text("This will permanently delete all your sleep records. This cannot be undone.")
             }
         }
     }
@@ -177,10 +190,26 @@ struct SettingsView: View {
                         .foregroundColor(.sleepTextPrimary)
                 }
             }
+            
+            Button(role: .destructive) {
+                showingClearAlert = true
+            } label: {
+                HStack {
+                    Image(systemName: "trash.fill")
+                    Text("Clear History")
+                }
+            }
         } header: {
             Text("Privacy")
                 .foregroundColor(.sleepTextSecondary)
         }
+    }
+    
+    private func clearAllHistory() {
+        for session in sessions {
+            modelContext.delete(session)
+        }
+        try? modelContext.save()
     }
     
     // MARK: - About Section

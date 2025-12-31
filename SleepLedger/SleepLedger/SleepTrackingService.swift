@@ -34,6 +34,8 @@ class SleepTrackingService: ObservableObject {
                 self?.handleMovementData(movementData)
             }
         }
+        // Ensure phone can sleep by default
+        UIApplication.shared.isIdleTimerDisabled = false
     }
     
     // MARK: - Public Methods
@@ -59,6 +61,9 @@ class SleepTrackingService: ObservableObject {
         motionService.startTracking()
         isTracking = true
         
+        // Keep phone awake during tracking (prevents iOS from sleeping while monitoring)
+        UIApplication.shared.isIdleTimerDisabled = true
+        
         // Save context
         try? modelContext.save()
         
@@ -81,11 +86,14 @@ class SleepTrackingService: ObservableObject {
         motionService.stopTracking()
         isTracking = false
         
+        // Allow phone to sleep again
+        UIApplication.shared.isIdleTimerDisabled = false
+        
         // End the session
         session.endSession()
         
-        // Check minimum duration (30 minutes) - delete if too short
-        let minimumDurationMinutes: Double = 30.0
+        // Check minimum duration (5 minutes) - delete if too short
+        let minimumDurationMinutes: Double = 5.0
         if let durationHours = session.durationInHours, durationHours < (minimumDurationMinutes / 60.0) {
             print("⚠️ Session too short (< \(Int(minimumDurationMinutes)) min), deleting from history")
             modelContext.delete(session)

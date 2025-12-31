@@ -95,7 +95,7 @@ struct SleepView: View {
             HStack {
                 Image(systemName: "moon.zzz.fill")
                     .foregroundColor(.sleepPrimary)
-                Text("Tracking Sleep")
+                Text("Sleeping Now")
                     .font(.headline)
                     .foregroundColor(.sleepTextPrimary)
                 Spacer()
@@ -108,7 +108,7 @@ struct SleepView: View {
             
             HStack(spacing: 32) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Started")
+                    Text("Fell Asleep")
                         .font(.caption)
                         .foregroundColor(.sleepTextSecondary)
                     Text(session.startTime.formatted(date: .omitted, time: .shortened))
@@ -119,7 +119,7 @@ struct SleepView: View {
                 
                 if let duration = session.duration {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Duration")
+                        Text("So Far")
                             .font(.caption)
                             .foregroundColor(.sleepTextSecondary)
                         Text(formatDuration(duration))
@@ -161,7 +161,7 @@ struct SleepView: View {
             
             HStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Duration")
+                    Text("Slept")
                         .font(.caption)
                         .foregroundColor(.sleepTextSecondary)
                     Text(String(format: "%.1fh", session.durationInHours ?? 0))
@@ -172,7 +172,7 @@ struct SleepView: View {
                 
                 if let debt = session.sleepDebt, debt != 0 {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("vs Goal")
+                        Text("Goal")
                             .font(.caption)
                             .foregroundColor(.sleepTextSecondary)
                         HStack(spacing: 4) {

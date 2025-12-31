@@ -37,7 +37,7 @@ struct CircularPunchButton: View {
                         .font(.system(size: 50))
                         .foregroundColor(isTracking ? .black : .white)
                     
-                    Text(isTracking ? "Punch Out" : "Punch In")
+                    Text(isTracking ? "Stop" : "Start")
                         .font(.title2)
                         .fontWeight(.medium)
                         .foregroundColor(isTracking ? .black : .white)

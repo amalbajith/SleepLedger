@@ -14,6 +14,7 @@ struct JournalView: View {
     
     @State private var selectedPeriod: TimePeriod = .week
     @State private var selectedSession: SleepSession?
+    @State private var showingClearAlert = false
     
     enum TimePeriod: String, CaseIterable {
         case week = "7 Days"
@@ -50,6 +51,22 @@ struct JournalView: View {
             .background(Color.sleepBackground)
             .navigationTitle("Journal")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingClearAlert = true }) {
+                        Image(systemName: "trash")
+                            .foregroundColor(.sleepTextSecondary)
+                    }
+                }
+            }
+            .alert("Clear All History?", isPresented: $showingClearAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear", role: .destructive) {
+                    clearAllHistory()
+                }
+            } message: {
+                Text("This will permanently delete all your sleep records. This cannot be undone.")
+            }
             .sheet(item: $selectedSession) { session in
                 SessionDetailView(session: session)
             }
@@ -65,10 +82,10 @@ struct JournalView: View {
                     Text(period.rawValue)
                         .font(.subheadline)
                         .fontWeight(selectedPeriod == period ? .semibold : .regular)
-                        .foregroundColor(selectedPeriod == period ? .white : .sleepTextSecondary)
+                        .foregroundColor(selectedPeriod == period ? .black : .sleepTextSecondary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(selectedPeriod == period ? Color.sleepPrimary : Color.sleepCardBackground)
+                        .background(selectedPeriod == period ? Color.white : Color.sleepCardBackground)
                         .cornerRadius(20)
                 }
             }
@@ -82,14 +99,14 @@ struct JournalView: View {
             HStack(spacing: 16) {
                 StatCard(
                     icon: "moon.fill",
-                    label: "Avg Sleep",
+                    label: "Average",
                     value: String(format: "%.1fh", averageSleepDuration),
                     color: .sleepPrimary
                 )
                 
                 StatCard(
                     icon: "star.fill",
-                    label: "Avg Quality",
+                    label: "Quality",
                     value: String(format: "%.0f%%", averageQuality),
                     color: .sleepSecondary
                 )
@@ -98,14 +115,14 @@ struct JournalView: View {
             HStack(spacing: 16) {
                 StatCard(
                     icon: "chart.line.downtrend.xyaxis",
-                    label: "Sleep Debt",
+                    label: "Balance",
                     value: String(format: "%+.1fh", totalSleepDebt),
                     color: totalSleepDebt >= 0 ? .sleepSuccess : .sleepError
                 )
                 
                 StatCard(
                     icon: "calendar",
-                    label: "Sessions",
+                    label: "Nights",
                     value: "\(filteredSessions.count)",
                     color: .sleepPrimary
                 )
@@ -117,7 +134,7 @@ struct JournalView: View {
     
     private var sleepTrendSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Sleep Duration Trend")
+            Text("Sleep Pattern")
                 .font(.headline)
                 .foregroundColor(.sleepTextPrimary)
             
@@ -132,7 +149,7 @@ struct JournalView: View {
     
     private var sessionsListSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("All Sessions")
+            Text("All Nights")
                 .font(.headline)
                 .foregroundColor(.sleepTextPrimary)
             
@@ -157,7 +174,7 @@ struct JournalView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.sleepTextTertiary)
             
-            Text("No sleep sessions yet")
+            Text("No sleep tracked yet")
                 .font(.subheadline)
                 .foregroundColor(.sleepTextSecondary)
         }
@@ -189,6 +206,15 @@ struct JournalView: View {
     
     private var totalSleepDebt: Double {
         filteredSessions.compactMap { $0.sleepDebt }.reduce(0, +)
+    }
+    
+    // MARK: - Actions
+    
+    private func clearAllHistory() {
+        for session in sessions {
+            modelContext.delete(session)
+        }
+        try? modelContext.save()
     }
 }
 
