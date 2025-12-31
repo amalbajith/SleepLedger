@@ -148,17 +148,55 @@ final class SleepSession {
         self.deepSleepDuration = deepSleepMinutes
         
         // Calculate quality score (0-100)
-        // Higher deep sleep % = better quality
         let totalSleepMinutes = lightSleepMinutes + deepSleepMinutes
         if totalSleepMinutes > 0 {
             let deepSleepPercentage = deepSleepMinutes / totalSleepMinutes
             let averageMovement = totalMovement / Double(movementData.count)
             
-            // Quality = 70% based on deep sleep ratio, 30% based on low movement
-            let deepSleepScore = deepSleepPercentage * 70
-            let movementScore = max(0, (1.0 - averageMovement) * 30)
+            // Base quality = 60% deep sleep ratio, 20% low movement
+            let deepSleepScore = deepSleepPercentage * 60
+            let movementScore = max(0, (1.0 - averageMovement) * 20)
+            let baseQuality = deepSleepScore + movementScore
             
-            self.sleepQualityScore = min(100, deepSleepScore + movementScore)
+            // Duration penalty: 20% of score based on duration
+            guard let hours = durationInHours else { 
+                self.sleepQualityScore = min(100, baseQuality)
+                return 
+            }
+            
+            let durationPenalty = calculateDurationPenalty(hours: hours)
+            let durationScore = durationPenalty * 20
+            
+            // Final quality score
+            self.sleepQualityScore = min(100, baseQuality + durationScore)
+        }
+    }
+    
+    /// Calculate duration penalty factor (0.0 - 1.0)
+    /// Returns lower values for very short or very long sleep
+    private func calculateDurationPenalty(hours: Double) -> Double {
+        switch hours {
+        case 0..<1:
+            // < 1 hour: Very poor (0-20%)
+            return hours * 0.2
+        case 1..<3:
+            // 1-3 hours: Poor (20-50%)
+            return 0.2 + ((hours - 1) / 2) * 0.3
+        case 3..<5:
+            // 3-5 hours: Fair (50-70%)
+            return 0.5 + ((hours - 3) / 2) * 0.2
+        case 5..<7:
+            // 5-7 hours: Good (70-90%)
+            return 0.7 + ((hours - 5) / 2) * 0.2
+        case 7..<9:
+            // 7-9 hours: Excellent (90-100%)
+            return 0.9 + ((hours - 7) / 2) * 0.1
+        case 9..<11:
+            // 9-11 hours: Good but long (90-80%)
+            return 0.9 - ((hours - 9) / 2) * 0.1
+        default:
+            // > 11 hours: Too long (80-60%)
+            return max(0.6, 0.8 - ((hours - 11) / 2) * 0.1)
         }
     }
     
