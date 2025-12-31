@@ -19,10 +19,10 @@ struct SleepView: View {
             
             // 2. Main Content
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 28) {
+                VStack(spacing: 16) { // Reduced spacing from 28
                     // Header
                     headerSection
-                        .padding(.top, 8)
+                        .padding(.top, 4) // Reduced padding
                     
                     // Logic: Derived Metrics (using @Query data for instant UI updates)
                     let completed = allSessions.filter { $0.endTime != nil }
@@ -45,11 +45,11 @@ struct SleepView: View {
                         progress: debtProgress,
                         isDeficit: totalDebt < 0
                     )
-                    .frame(width: 220, height: 220)
-                    .padding(.vertical, 8)
+                    .frame(width: 180, height: 180) // Shrunk from 220
+                    .padding(.vertical, 0)
                     
                     // Mid Section: Quick Stats (3-column layout)
-                    HStack(spacing: 12) {
+                    HStack(spacing: 8) { // Tighter spacing
                         StatChip(label: "Average", value: formatDuration(avgDuration))
                         StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
                         StatChip(label: "Balance", value: totalDebt >= 0 ? "Surplus" : "Deficit", valueColor: totalDebt >= 0 ? .sleepSuccess : .sleepError)
@@ -59,11 +59,12 @@ struct SleepView: View {
                     PulseButton(isTracking: trackingService.isTracking) {
                         handlePunchAction()
                     }
-                    .padding(.vertical, 12)
+                    .scaleEffect(0.9) // Slightly smaller button
+                    .padding(.vertical, 4)
                     
                     // Footer: Last Night Summary
                     if let lastSession = completed.first {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("RECENT HISTORY")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.sleepTextTertiary)
@@ -71,18 +72,17 @@ struct SleepView: View {
                                 .padding(.leading, 4)
                             
                             TactileTimeCard(lastSession: lastSession)
+                                .scaleEffect(0.95) // Fit card better
                         }
                     }
                     
-                    Spacer(minLength: 100) // Space for floating tab bar
+                    Spacer(minLength: 120) // More bottom space for tab bar
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16) // Tighter margins
                 .padding(.top, 16)
             }
         }
         .background(Color.sleepBackground)
-        // Ensure top is NOT ignored to avoid notch collision
-        // Bottom is ignored to let background bleed behind tab bar
         .ignoresSafeArea(.container, edges: .bottom)
     }
     
@@ -107,28 +107,29 @@ struct SleepView: View {
     
     private var headerSection: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) { // Tighter spacing
                 Text(Date().formatted(.dateTime.weekday(.wide).month().day()))
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold)) // Smaller font
                     .foregroundColor(.sleepTextSecondary)
                     .textCase(.uppercase)
-                    .tracking(1.2)
+                    .tracking(1.0)
                 
                 Text(greeting)
-                    .font(.system(size: 32, weight: .light))
+                    .font(.system(size: 28, weight: .light)) // Reduced from 32
                     .foregroundColor(.white)
+                    .minimumScaleFactor(0.8) // Allow shrinking
             }
-            .padding(.leading, 8) // Nudge away from screen edge
+            .padding(.leading, 8)
             
             Spacer()
             
             Button {
-                // Settings or Notifications Action
+                // Settings action
             } label: {
                 Image(systemName: "bell.badge")
-                    .font(.system(size: 18))
+                    .font(.system(size: 16))
                     .foregroundColor(.white)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 40, height: 40) // Smaller button
                     .background(Circle().fill(Color.white.opacity(0.05)))
                     .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 1))
             }
