@@ -2,22 +2,16 @@
 //  CircularPunchButton.swift
 //  SleepLedger
 //
-//  Circular punch in/out button with integrated smart alarm
+//  Circular punch in/out button - simplified
 //
 
 import SwiftUI
 
 struct CircularPunchButton: View {
     let isTracking: Bool
-    let onPunchIn: (Date, Bool) -> Void
+    let onPunchIn: () -> Void
     let onPunchOut: () -> Void
     
-    @State private var showingAlarmPicker = false
-    @State private var smartAlarmEnabled = true
-    @State private var wakeTime: Date = {
-        let calendar = Calendar.current
-        return calendar.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
-    }()
     @State private var isPressing = false
     
     var body: some View {
@@ -25,7 +19,7 @@ struct CircularPunchButton: View {
             if isTracking {
                 trackingView
             } else {
-                alarmSetupView
+                punchInView
             }
         }
     }
@@ -42,6 +36,19 @@ struct CircularPunchButton: View {
             // Large circular stop button
             Button(action: onPunchOut) {
                 ZStack {
+                    // Outer glow ring
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [.sleepError.opacity(0.3), .clear],
+                                center: .center,
+                                startRadius: 100,
+                                endRadius: 140
+                            )
+                        )
+                        .frame(width: 280, height: 280)
+                    
+                    // Main button
                     Circle()
                         .fill(
                             LinearGradient(
@@ -62,6 +69,10 @@ struct CircularPunchButton: View {
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
+                        
+                        Text("End Sleep Session")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                 }
             }
@@ -73,16 +84,17 @@ struct CircularPunchButton: View {
                     .onEnded { _ in isPressing = false }
             )
         }
+        .padding()
     }
     
-    // MARK: - Alarm Setup View (Before Punch In)
+    // MARK: - Punch In View
     
-    private var alarmSetupView: some View {
-        VStack(spacing: 24) {
+    private var punchInView: some View {
+        VStack(spacing: 32) {
             // Header
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 50))
+                    .font(.system(size: 60))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.sleepPrimary, .sleepSecondary],
@@ -91,77 +103,19 @@ struct CircularPunchButton: View {
                         )
                     )
                 
-                Text("Set Your Wake Time")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                Text("Ready to Sleep?")
+                    .font(.title)
+                    .fontWeight(.bold)
                     .foregroundColor(.sleepTextPrimary)
                 
-                Text("Smart alarm will wake you during light sleep")
-                    .font(.caption)
+                Text("Tap to start tracking your sleep")
+                    .font(.subheadline)
                     .foregroundColor(.sleepTextSecondary)
                     .multilineTextAlignment(.center)
             }
             
-            // Time Picker Card
-            VStack(spacing: 16) {
-                // Smart Alarm Toggle
-                HStack {
-                    Image(systemName: smartAlarmEnabled ? "brain.head.profile.fill" : "brain.head.profile")
-                        .foregroundColor(.sleepPrimary)
-                        .font(.title3)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Smart Alarm")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.sleepTextPrimary)
-                        
-                        Text("30 min window before wake time")
-                            .font(.caption)
-                            .foregroundColor(.sleepTextSecondary)
-                    }
-                    
-                    Spacer()
-                    
-                    Toggle("", isOn: $smartAlarmEnabled)
-                        .labelsHidden()
-                        .tint(.sleepPrimary)
-                }
-                
-                if smartAlarmEnabled {
-                    Divider()
-                        .background(Color.sleepCardBorder)
-                    
-                    // Time Picker
-                    VStack(spacing: 12) {
-                        HStack {
-                            Image(systemName: "alarm.fill")
-                                .foregroundColor(.sleepSecondary)
-                            Text("Wake Time")
-                                .font(.subheadline)
-                                .foregroundColor(.sleepTextPrimary)
-                            Spacer()
-                        }
-                        
-                        DatePicker(
-                            "",
-                            selection: $wakeTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                        .datePickerStyle(.wheel)
-                        .labelsHidden()
-                        .colorScheme(.dark)
-                        .tint(.sleepPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                    }
-                }
-            }
-            .padding()
-            .sleepCard()
-            
             // Large Circular Punch In Button
-            Button(action: handlePunchIn) {
+            Button(action: onPunchIn) {
                 ZStack {
                     // Outer glow ring
                     Circle()
@@ -169,11 +123,11 @@ struct CircularPunchButton: View {
                             RadialGradient(
                                 colors: [.sleepPrimary.opacity(0.3), .clear],
                                 center: .center,
-                                startRadius: 90,
-                                endRadius: 130
+                                startRadius: 100,
+                                endRadius: 140
                             )
                         )
-                        .frame(width: 260, height: 260)
+                        .frame(width: 280, height: 280)
                     
                     // Main button
                     Circle()
@@ -184,12 +138,12 @@ struct CircularPunchButton: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 180, height: 180)
+                        .frame(width: 200, height: 200)
                         .shadow(color: .sleepPrimary.opacity(0.5), radius: 20, x: 0, y: 10)
                     
                     VStack(spacing: 12) {
                         Image(systemName: "play.circle.fill")
-                            .font(.system(size: 50))
+                            .font(.system(size: 60))
                             .foregroundColor(.white)
                         
                         Text("Punch In")
@@ -210,18 +164,13 @@ struct CircularPunchButton: View {
                     .onChanged { _ in isPressing = true }
                     .onEnded { _ in isPressing = false }
             )
+            
+            // Hint about settings
+            Text("Configure smart alarm in Settings")
+                .font(.caption)
+                .foregroundColor(.sleepTextTertiary)
         }
         .padding()
-    }
-    
-    // MARK: - Actions
-    
-    private func handlePunchIn() {
-        // Calculate wake time (30 minutes before selected time for the window)
-        let calendar = Calendar.current
-        let targetWakeTime = smartAlarmEnabled ? wakeTime : nil
-        
-        onPunchIn(targetWakeTime ?? Date(), smartAlarmEnabled)
     }
 }
 
@@ -229,7 +178,7 @@ struct CircularPunchButton: View {
     VStack {
         CircularPunchButton(
             isTracking: false,
-            onPunchIn: { _, _ in },
+            onPunchIn: { },
             onPunchOut: { }
         )
     }

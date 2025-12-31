@@ -91,10 +91,21 @@ struct DashboardView: View {
     private var punchButton: some View {
         CircularPunchButton(
             isTracking: trackingService.isTracking,
-            onPunchIn: { wakeTime, smartAlarmEnabled in
+            onPunchIn: {
+                // Read settings from AppStorage
+                let smartAlarmEnabled = UserDefaults.standard.bool(forKey: "smartAlarmEnabled")
+                let wakeTimeInterval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
+                
+                let wakeTime: Date?
+                if smartAlarmEnabled && wakeTimeInterval > 0 {
+                    wakeTime = Date(timeIntervalSinceReferenceDate: wakeTimeInterval)
+                } else {
+                    wakeTime = nil
+                }
+                
                 trackingService.punchIn(
                     smartAlarmEnabled: smartAlarmEnabled,
-                    targetWakeTime: smartAlarmEnabled ? wakeTime : nil
+                    targetWakeTime: wakeTime
                 )
             },
             onPunchOut: {

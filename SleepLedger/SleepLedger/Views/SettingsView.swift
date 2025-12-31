@@ -76,7 +76,7 @@ struct SettingsView: View {
         Section {
             Toggle(isOn: $smartAlarmEnabled) {
                 HStack {
-                    Image(systemName: "alarm.fill")
+                    Image(systemName: "brain.head.profile.fill")
                         .foregroundColor(.sleepSecondary)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Smart Alarm")
@@ -90,11 +90,37 @@ struct SettingsView: View {
             .tint(.sleepPrimary)
             
             if smartAlarmEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("The smart alarm will wake you during light sleep within 20 minutes before your target time.")
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "alarm.fill")
+                            .foregroundColor(.sleepPrimary)
+                        Text("Wake Time")
+                            .foregroundColor(.sleepTextPrimary)
+                        Spacer()
+                    }
+                    
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: {
+                                let interval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
+                                return interval > 0 ? Date(timeIntervalSinceReferenceDate: interval) : Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
+                            },
+                            set: { newValue in
+                                UserDefaults.standard.set(newValue.timeIntervalSinceReferenceDate, forKey: "wakeTimeInterval")
+                            }
+                        ),
+                        displayedComponents: .hourAndMinute
+                    )
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .tint(.sleepPrimary)
+                    
+                    Text("The smart alarm will wake you during light sleep within 30 minutes before your target time.")
                         .font(.caption)
                         .foregroundColor(.sleepTextSecondary)
                 }
+                .padding(.vertical, 8)
             }
         } header: {
             Text("Alarm")
