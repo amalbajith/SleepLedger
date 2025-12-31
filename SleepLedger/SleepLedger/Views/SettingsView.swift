@@ -1,570 +1,392 @@
-//
-//  SettingsView.swift
-//  SleepLedger
-//
-//  App settings and configuration
-//
-
 import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
+    // MARK: - Persistent Settings
+    @AppStorage("hapticFeedback") private var hapticFeedback = true
     @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
-    @AppStorage("smartAlarmEnabled") private var smartAlarmEnabled: Bool = false
-    @AppStorage("notificationsEnabled") private var notificationsEnabled: Bool = true
+    @AppStorage("targetSleepEntryTime") private var targetSleepEntryTime: Double = 22.5 // 10:30 PM represented as hours
     
-    @State private var showingAbout = false
-    @State private var showingClearAlert = false
-    
-    @Environment(\.modelContext) private var modelContext
-    @Query private var sessions: [SleepSession]
+    // MARK: - State
+    @State private var showingExportSheet = false
+    @State private var showingAboutSheet = false
+    @State private var showingSleepEntryPicker = false
     
     var body: some View {
-        NavigationStack {
-            Form {
-                // Sleep Goal Section
-                sleepGoalSection
-                
-                // Smart Alarm Section
-                smartAlarmSection
-                
-                // Notifications Section
-                notificationsSection
-                
-                // Data & Privacy Section
-                dataPrivacySection
-                
-                // Legal Section
-                legalSection
-                
-                // About Section
-                aboutSection
-            }
-            .navigationTitle("Settings")
-            .scrollContentBackground(.hidden)
-            .background(Color.sleepBackground)
-            .sheet(isPresented: $showingAbout) {
-                AboutView()
-            }
-            .alert("Clear All History?", isPresented: $showingClearAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear", role: .destructive) {
-                    clearAllHistory()
-                }
-            } message: {
-                Text("This will permanently delete all your sleep records. This cannot be undone.")
-            }
-        }
-    }
-    
-    // MARK: - Sleep Goal Section
-    
-    private var sleepGoalSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Image(systemName: "target")
-                        .foregroundColor(.sleepPrimary)
-                    Text("Sleep Goal")
-                        .foregroundColor(.sleepTextPrimary)
-                    Spacer()
-                    Text(String(format: "%.1f hours", sleepGoalHours))
-                        .foregroundColor(.sleepTextSecondary)
-                }
-                
-                Slider(value: $sleepGoalHours, in: 4...12, step: 0.5)
-                    .tint(.sleepPrimary)
-                
-                Text("Your target sleep duration per night")
-                    .font(.caption)
-                    .foregroundColor(.sleepTextSecondary)
-            }
-            .padding(.vertical, 8)
-        } header: {
-            Text("Sleep Settings")
-                .foregroundColor(.sleepTextSecondary)
-        }
-    }
-    
-    // MARK: - Smart Alarm Section
-    
-    private var smartAlarmSection: some View {
-        Section {
-            Toggle(isOn: $smartAlarmEnabled) {
-                HStack {
-                    Image(systemName: "brain.head.profile.fill")
-                        .foregroundColor(.sleepPrimaryGlow)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Smart Alarm")
-                            .foregroundColor(.sleepTextPrimary)
-                        Text("Wake during light sleep")
-                            .font(.caption)
-                            .foregroundColor(.sleepTextSecondary)
-                    }
-                }
-            }
-            .tint(.sleepPrimary)
+        ZStack {
+            // Background
+            Color.black
+                .ignoresSafeArea()
             
-            if smartAlarmEnabled {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: "alarm.fill")
-                            .foregroundColor(.sleepPrimary)
-                        Text("Wake Time")
-                            .foregroundColor(.sleepTextPrimary)
-                        Spacer()
-                    }
-                    
-                    DatePicker(
-                        "",
-                        selection: Binding(
-                            get: {
-                                let interval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
-                                return interval > 0 ? Date(timeIntervalSinceReferenceDate: interval) : Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
-                            },
-                            set: { newValue in
-                                UserDefaults.standard.set(newValue.timeIntervalSinceReferenceDate, forKey: "wakeTimeInterval")
+            VStack(spacing: 0) {
+                // Header
+                headerView
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // General Section
+                        buildSection(title: "GENERAL") {
+                            ToggleRow(icon: "iphone.gen3", iconColor: Color(hex: "5C3B4B"), title: "Haptic Feedback", isOn: $hapticFeedback)
+                            Divider().overlay(Color.white.opacity(0.1))
+                            
+                            // Sleep Goal Slider
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "target")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .frame(width: 32, height: 32)
+                                        .background(Color(hex: "4A4458"))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    Text("Sleep Goal: \(String(format: "%.1f", sleepGoalHours))h")
+                                        .font(.body)
+                                        .foregroundStyle(.white)
+                                }
+                                Slider(value: $sleepGoalHours, in: 4...12, step: 0.5)
+                                    .tint(Color(hex: "8B5CF6"))
                             }
-                        ),
-                        displayedComponents: .hourAndMinute
-                    )
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .tint(.sleepPrimary)
-                    
-                    Text("The smart alarm will wake you during light sleep within 30 minutes before your target time.")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
-                }
-                .padding(.vertical, 8)
-            }
-        } header: {
-            Text("Alarm")
-                .foregroundColor(.sleepTextSecondary)
-        }
-    }
-    
-    // MARK: - Notifications Section
-    
-    private var notificationsSection: some View {
-        Section {
-            Toggle(isOn: $notificationsEnabled) {
-                HStack {
-                    Image(systemName: "bell.fill")
-                        .foregroundColor(.sleepPrimary)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Notifications")
-                            .foregroundColor(.sleepTextPrimary)
-                        Text("Alarm and reminders")
-                            .font(.caption)
-                            .foregroundColor(.sleepTextSecondary)
+                            .padding()
+                        }
+                        
+                        // Data Management Section
+                        buildSection(title: "DATA MANAGEMENT") {
+                            Button {
+                                showingExportSheet = true
+                            } label: {
+                                SettingsRow(icon: "square.and.arrow.up", iconColor: Color(hex: "2C3E50"), title: "Export Data")
+                            }
+                        }
+                        
+                        // Reminders Section
+                        buildSection(title: "REMINDERS") {
+                            Button {
+                                withAnimation {
+                                    showingSleepEntryPicker.toggle()
+                                }
+                            } label: {
+                                SettingsRow(
+                                    icon: "moon.zzz.fill",
+                                    iconColor: Color(hex: "342E40"),
+                                    title: "Sleep Entry Target",
+                                    value: formatTime(from: targetSleepEntryTime),
+                                    valueIsHighlight: true
+                                )
+                            }
+                            if showingSleepEntryPicker {
+                                Divider().overlay(Color.white.opacity(0.1))
+                                DatePicker("", selection: Binding(
+                                    get: {
+                                        let hour = Int(targetSleepEntryTime)
+                                        let minute = Int((targetSleepEntryTime.truncatingRemainder(dividingBy: 1) * 60).rounded())
+                                        return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+                                    },
+                                    set: { newDate in
+                                        let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                                        if let h = components.hour, let m = components.minute {
+                                            targetSleepEntryTime = Double(h) + Double(m) / 60.0
+                                        }
+                                    }
+                                ), displayedComponents: .hourAndMinute)
+                                .datePickerStyle(.wheel)
+                                .labelsHidden()
+                                .environment(\.colorScheme, .dark)
+                            }
+                        }
+                        
+                        // About Section
+                        buildSection(title: "ABOUT SLEEPLEDGER") {
+                            Button {
+                                showingAboutSheet = true
+                            } label: {
+                                SettingsRow(icon: "info.circle.fill", iconColor: Color(hex: "3E3E3E"), title: "Version", value: "v1.0.2")
+                            }
+                        }
+                        
+                        // Footer
+                        VStack(spacing: 16) {
+                            HStack {
+                                Image(systemName: "checkmark.seal.fill")
+                                Text("No Subscription Required")
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundStyle(Color(hex: "9F7AEA"))
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .background(Color(hex: "9F7AEA").opacity(0.15))
+                            .clipShape(Capsule())
+                            
+                            Text("SleepLedger Inc. © 2024")
+                                .font(.caption)
+                                .foregroundStyle(Color.gray)
+                        }
+                        .padding(.top, 10)
+                        .padding(.bottom, 100)
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 20)
                 }
             }
-            .tint(.sleepPrimary)
-        } header: {
-            Text("Notifications")
-                .foregroundColor(.sleepTextSecondary)
+        }
+        .preferredColorScheme(.dark)
+        .sheet(isPresented: $showingExportSheet) {
+            ExportDataView()
+        }
+        .sheet(isPresented: $showingAboutSheet) {
+            AboutView()
         }
     }
     
-    // MARK: - Data & Privacy Section
-    
-    private var dataPrivacySection: some View {
-        Section {
-            NavigationLink {
-                DataPrivacyView()
-            } label: {
-                HStack {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundColor(.sleepSuccess)
-                    Text("Data & Privacy")
-                        .foregroundColor(.sleepTextPrimary)
-                }
-            }
+    var headerView: some View {
+        HStack {
+            Image(systemName: "person.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(Color(hex: "341963")) // Deep Profile Purple
+                .clipShape(Circle())
             
-            NavigationLink {
-                ExportDataView()
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up.fill")
-                        .foregroundColor(.sleepPrimary)
-                    Text("Export Data")
-                        .foregroundColor(.sleepTextPrimary)
-                }
-            }
+            Spacer()
             
-            Button(role: .destructive) {
-                showingClearAlert = true
-            } label: {
-                HStack {
-                    Image(systemName: "trash.fill")
-                    Text("Clear History")
-                }
-            }
-        } header: {
-            Text("Privacy")
-                .foregroundColor(.sleepTextSecondary)
-        }
-    }
-    
-    private func clearAllHistory() {
-        for session in sessions {
-            modelContext.delete(session)
-        }
-        try? modelContext.save()
-    }
-    
-    // MARK: - Legal Section
-    
-    private var legalSection: some View {
-        Section {
-            NavigationLink {
-                DisclaimerView()
-            } label: {
-                HStack {
-                    Image(systemName: "hand.raised.fill")
-                        .foregroundColor(.sleepWarning)
-                    Text("Medical Disclaimer")
-                        .foregroundColor(.sleepTextPrimary)
-                }
-            }
-        } header: {
-            Text("Legal")
-                .foregroundColor(.sleepTextSecondary)
-        }
-    }
-    
-    // MARK: - About Section
-    
-    private var aboutSection: some View {
-        Section {
-            Button {
-                showingAbout = true
-            } label: {
-                HStack {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundColor(.sleepPrimaryGlow)
-                    Text("About SleepLedger")
-                        .foregroundColor(.sleepTextPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextTertiary)
-                }
-            }
+            Text("Settings")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
             
-            HStack {
-                Text("Version")
-                    .foregroundColor(.sleepTextPrimary)
-                Spacer()
-                Text("1.0.0")
-                    .foregroundColor(.sleepTextSecondary)
-            }
-        } header: {
-            Text("About")
-                .foregroundColor(.sleepTextSecondary)
+            Spacer()
+            
+            // Invisible spacer to balance the header centering
+            Color.clear
+                .frame(width: 36, height: 36)
         }
+        .padding()
+        .background(Color.black)
+    }
+    
+    func buildSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.gray)
+                .padding(.leading, 8)
+            
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(Color(hex: "151517"))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+    
+    func formatTime(from hours: Double) -> String {
+        let hour = Int(hours)
+        let minute = Int((hours.truncatingRemainder(dividingBy: 1) * 60).rounded())
+        let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+        return date.formatted(date: .omitted, time: .shortened)
     }
 }
 
-// MARK: - Data Privacy View
+// MARK: - Components
 
-struct DataPrivacyView: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.sleepSuccess, .sleepPrimary],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    
-                    Text("Your Privacy Matters")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("SleepLedger is built with privacy at its core")
-                        .font(.subheadline)
-                        .foregroundColor(.sleepTextSecondary)
-                }
-                
-                Divider()
-                    .background(Color.sleepGlassBorder)
-                
-                PrivacyFeature(
-                    icon: "iphone.and.arrow.forward",
-                    title: "100% Local Storage",
-                    description: "All your sleep data is stored locally on your device using SwiftData. Nothing is sent to external servers."
-                )
-                
-                PrivacyFeature(
-                    icon: "icloud.slash.fill",
-                    title: "No Cloud Sync",
-                    description: "Your data never leaves your device. No cloud storage, no backups to third-party servers."
-                )
-                
-                PrivacyFeature(
-                    icon: "person.crop.circle.badge.xmark",
-                    title: "No Account Required",
-                    description: "No sign-up, no login, no email required. Just install and start tracking."
-                )
-                
-                PrivacyFeature(
-                    icon: "chart.bar.xaxis",
-                    title: "No Analytics",
-                    description: "We don't track your usage, collect analytics, or send telemetry data."
-                )
-                
-                PrivacyFeature(
-                    icon: "dollarsign.circle.fill",
-                    title: "No Subscriptions",
-                    description: "One-time purchase, no recurring fees, no premium tiers with data access."
-                )
-                
-                Divider()
-                    .background(Color.sleepGlassBorder)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Permissions Used")
-                        .font(.headline)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("• Motion & Fitness: To track movement during sleep")
-                        .font(.subheadline)
-                        .foregroundColor(.sleepTextSecondary)
-                    
-                    Text("• Notifications: For smart alarm alerts")
-                        .font(.subheadline)
-                        .foregroundColor(.sleepTextSecondary)
-                }
-            }
-            .padding()
-        }
-        .background(Color.sleepBackground)
-        .navigationTitle("Data & Privacy")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct PrivacyFeature: View {
+struct SettingsRow: View {
     let icon: String
+    let iconColor: Color
     let title: String
-    let description: String
+    var value: String? = nil
+    var valueIsHighlight: Bool = false
     
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.sleepSuccess)
-                .frame(width: 40)
+                .font(.system(size: 14))
+                .foregroundStyle(getForeground(for: iconColor))
+                .frame(width: 32, height: 32)
+                .background(iconColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.sleepTextPrimary)
-                
-                Text(description)
+            Text(title)
+                .font(.body)
+                .foregroundStyle(.white)
+            
+            Spacer()
+            
+            if let value = value {
+                Text(value)
                     .font(.subheadline)
-                    .foregroundColor(.sleepTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(valueIsHighlight ? Color(hex: "9F7AEA") : Color.gray)
+                    .padding(.horizontal, valueIsHighlight ? 8 : 0)
+                    .padding(.vertical, valueIsHighlight ? 4 : 0)
+                    .background(valueIsHighlight ? Color(hex: "9F7AEA").opacity(0.15) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
             }
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(Color.gray.opacity(0.7))
         }
+        .padding()
+        // Ensure the entire row is tappable if inside a button
+        .contentShape(Rectangle()) 
+    }
+    
+    func getForeground(for bg: Color) -> Color {
+        return .white.opacity(0.8)
     }
 }
 
-// MARK: - Export Data View
+struct ToggleRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(.white.opacity(0.8))
+                .frame(width: 32, height: 32)
+                .background(iconColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            Text(title)
+                .font(.body)
+                .foregroundStyle(.white)
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "8B5CF6")))
+                .labelsHidden()
+        }
+        .padding()
+    }
+}
+
+// MARK: - Sheets
 
 struct ExportDataView: View {
-    @Environment(\.modelContext) private var modelContext
-    @State private var showingExportSuccess = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 12) {
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                VStack(spacing: 20) {
                     Image(systemName: "square.and.arrow.up.fill")
                         .font(.system(size: 60))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.sleepPrimary, .sleepPrimaryGlow],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(Color(hex: "6B35F6"))
+                        .padding(.top, 40)
                     
-                    Text("Export Your Data")
+                    Text("Export Data")
                         .font(.title)
                         .fontWeight(.bold)
-                        .foregroundColor(.sleepTextPrimary)
+                        .foregroundStyle(.white)
                     
-                    Text("Download all your sleep data in JSON format")
-                        .font(.subheadline)
-                        .foregroundColor(.sleepTextSecondary)
+                    Text("Your data will be exported as a JSON file containing all sleep sessions and derived metrics.")
                         .multilineTextAlignment(.center)
-                }
-                
-                Button {
-                    exportData()
-                } label: {
-                    HStack {
-                        Image(systemName: "arrow.down.doc.fill")
-                        Text("Export as JSON")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.sleepPrimary, .sleepPrimaryGlow],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
-                }
-                .padding(.horizontal)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("What's included:")
-                        .font(.headline)
-                        .foregroundColor(.sleepTextPrimary)
+                        .foregroundStyle(.gray)
+                        .padding(.horizontal)
                     
-                    ExportItem(text: "All sleep sessions with timestamps")
-                    ExportItem(text: "Sleep quality scores and metrics")
-                    ExportItem(text: "Movement data and sleep stages")
-                    ExportItem(text: "Sleep debt calculations")
-                    ExportItem(text: "Notes and tags")
+                    Spacer()
+                    
+                    if let fileURL = generateJSONFile() {
+                        ShareLink(item: fileURL) {
+                            Text("Share / Save File")
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(hex: "6B35F6"))
+                                .cornerRadius(12)
+                        }
+                        .padding()
+                    }
                 }
-                .padding()
-                .sleepCard()
-                .padding(.horizontal)
             }
-            .padding(.vertical)
-        }
-        .background(Color.sleepBackground)
-        .navigationTitle("Export Data")
-        .navigationBarTitleDisplayMode(.inline)
-        .alert("Export Successful", isPresented: $showingExportSuccess) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Your sleep data has been exported successfully.")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
         }
     }
     
-    private func exportData() {
-        // TODO: Implement actual export functionality
-        showingExportSuccess = true
-    }
-}
-
-struct ExportItem: View {
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.sleepSuccess)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.sleepTextSecondary)
+    func generateJSONFile() -> URL? {
+        // Create a temporary file
+        let fileName = "sleep_data.json"
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent(fileName)
+        
+        // Dummy data
+        let jsonString = """
+        {
+            "app": "SleepLedger",
+            "version": "1.0.2",
+            "exportDate": "\(Date().formatted())",
+            "sessions": []
+        }
+        """
+        
+        do {
+            try jsonString.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            print("Error writing JSON: \(error)")
+            return nil
         }
     }
 }
-
-// MARK: - About View
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 16) {
+        NavigationView {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 80))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.sleepPrimary, .sleepPrimaryGlow],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .foregroundStyle(Color(hex: "6B35F6"))
+                            .padding(.top, 40)
                         
                         Text("SleepLedger")
                             .font(.largeTitle)
                             .fontWeight(.bold)
-                            .foregroundColor(.sleepTextPrimary)
+                            .foregroundStyle(.white)
                         
-                        Text("Version 1.0.0")
-                            .font(.subheadline)
-                            .foregroundColor(.sleepTextSecondary)
+                        Text("Version 1.0.2")
+                            .foregroundStyle(.gray)
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("A privacy-focused sleep tracker designed to help you understand and improve your sleep habits.")
+                                .foregroundStyle(.white)
+                        }
+                        .padding()
+                        .background(Color(hex: "1C1C1E"))
+                        .cornerRadius(16)
+                        .padding()
+                        
+                        Spacer()
                     }
-                    
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("A privacy-focused sleep tracker that uses a manual 'Punch In/Out' system with accelerometer-based movement detection.")
-                            .font(.body)
-                            .foregroundColor(.sleepTextSecondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Divider()
-                            .background(Color.sleepGlassBorder)
-                        
-                        FeatureRow(icon: "hand.tap.fill", text: "Manual punch in/out system")
-                        FeatureRow(icon: "waveform.path.ecg", text: "Accelerometer-based tracking")
-                        FeatureRow(icon: "moon.fill", text: "Sleep stage classification")
-                        FeatureRow(icon: "chart.line.downtrend.xyaxis", text: "Sleep debt calculation")
-                        FeatureRow(icon: "alarm.fill", text: "Smart alarm (light sleep)")
-                        FeatureRow(icon: "lock.shield.fill", text: "100% private & local")
-                    }
-                    .padding()
-                    .sleepCard()
-                    
-                    Text("Built with ❤️ for better sleep")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextTertiary)
                 }
-                .padding()
             }
-            .background(Color.sleepBackground)
             .navigationTitle("About")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
-        }
-    }
-}
-
-struct FeatureRow: View {
-    let icon: String
-    let text: String
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundColor(.sleepPrimary)
-                .frame(width: 24)
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(.sleepTextSecondary)
         }
     }
 }
 
 #Preview {
     SettingsView()
-        .preferredColorScheme(.dark)
 }

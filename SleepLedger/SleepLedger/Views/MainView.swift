@@ -21,10 +21,10 @@ struct MainView: View {
                     SleepView()
                 case 1:
                     JournalView()
-                case 3:
+                case 2:
                     SettingsView()
                 default:
-                    JournalView() // Placeholder for Stats/Insights
+                    SleepView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,12 +50,11 @@ struct MainView: View {
         HStack(spacing: 0) {
             tabButton(icon: "square.grid.2x2.fill", tag: 0)
             tabButton(icon: "calendar", tag: 1)
-            tabButton(icon: "chart.bar.xaxis", tag: 2)
-            tabButton(icon: "gearshape.fill", tag: 3)
+            tabButton(icon: "gearshape.fill", tag: 2)
         }
         .padding(.horizontal, 8)
         .frame(height: 64)
-        .frame(maxWidth: 300)
+        .frame(maxWidth: 240) // Reduced width for 3 tabs
         .sleepGlassPanel()
         .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
     }

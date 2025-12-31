@@ -1,10 +1,3 @@
-//
-//  OnboardingView.swift
-//  SleepLedger
-//
-//  First-time setup flow for optimal configuration
-//
-
 import SwiftUI
 
 struct OnboardingView: View {
@@ -12,6 +5,7 @@ struct OnboardingView: View {
     @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
     @AppStorage("smartAlarmEnabled") private var smartAlarmEnabled = false
     @AppStorage("wakeTimeInterval") private var wakeTimeInterval: Double = 0
+    @AppStorage("userName") private var userName = "Sleeper"
     
     @State private var currentPage = 0
     @State private var selectedWakeTime: Date = {
@@ -26,25 +20,28 @@ struct OnboardingView: View {
             Color.sleepBackground.ignoresSafeArea()
             
             TabView(selection: $currentPage) {
-                // Page 1: Welcome
+                // Page 0: Welcome
                 welcomePage.tag(0)
                 
+                // Page 1: Name
+                namePage.tag(1)
+                
                 // Page 2: Medical Disclaimer
-                disclaimerPage.tag(1)
+                disclaimerPage.tag(2)
                 
                 // Page 3: Sleep Goal
-                sleepGoalPage.tag(2)
+                sleepGoalPage.tag(3)
                 
                 // Page 4: Smart Alarm
-                smartAlarmPage.tag(3)
+                smartAlarmPage.tag(4)
                 
                 // Page 5: Wake Time
                 if smartAlarmEnabled {
-                    wakeTimePage.tag(4)
+                    wakeTimePage.tag(5)
                 }
                 
                 // Final Page: Ready
-                readyPage.tag(smartAlarmEnabled ? 5 : 4)
+                readyPage.tag(smartAlarmEnabled ? 6 : 5)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
@@ -95,6 +92,42 @@ struct OnboardingView: View {
         .padding()
     }
     
+    // MARK: - Name Page
+    
+    private var namePage: some View {
+        VStack(spacing: 32) {
+            Spacer()
+            
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.sleepPrimary)
+            
+            VStack(spacing: 16) {
+                Text("What should we call you?")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.sleepTextPrimary)
+                
+                Text("Your name helps us personalize your experience")
+                    .font(.subheadline)
+                    .foregroundColor(.sleepTextSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            TextField("Your Name", text: $userName)
+                .font(.title2)
+                .multilineTextAlignment(.center)
+                .padding()
+                .background(Color(hex: "1C1C1E"))
+                .cornerRadius(12)
+                .padding(.horizontal, 40)
+                .submitLabel(.done)
+            
+            Spacer()
+        }
+        .padding()
+    }
+    
     // MARK: - Disclaimer Page
     
     private var disclaimerPage: some View {
@@ -103,7 +136,7 @@ struct OnboardingView: View {
             
             Button {
                 withAnimation {
-                    currentPage = 2
+                    currentPage = 3
                 }
             } label: {
                 Text("I Accept & Continue")

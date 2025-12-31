@@ -1,76 +1,77 @@
-//
-//  DisclaimerView.swift
-//  SleepLedger
-//
-//  Medical and legal disclaimer
-//
-
 import SwiftUI
 
 struct DisclaimerView: View {
-    @Environment(\.dismiss) private var dismiss
     var isOnboarding: Bool = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 24) {
-            if !isOnboarding {
-                HStack {
-                    Spacer()
-                    Button("Done") {
-                        dismiss()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if !isOnboarding {
+                    HStack {
+                        Spacer()
+                        Capsule()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 40, height: 4)
+                        Spacer()
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(.sleepPrimary)
+                    .padding(.top)
                 }
-                .padding()
-            }
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Image(systemName: "exclamationmark.shield.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.sleepWarning)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical)
-                    
+                
+                HStack {
+                    Image(systemName: "hand.raised.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(Color.orange)
                     Text("Medical Disclaimer")
-                        .font(.title2)
+                        .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("SleepLedger is designed for wellness tracking purposes only. It is NOT a medical device and is not intended for the diagnosis, monitoring, or treatment of any medical condition or disease.")
-                        .font(.body)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("Professional Advice")
-                        .font(.headline)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("The information providing by SleepLedger should not replace professional medical advice. Always consult with a qualified healthcare provider for any health-related concerns, especially regarding sleep disorders.")
-                        .font(.body)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("No Guarantees")
-                        .font(.headline)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("Sleep tracking accuracy can vary based on device placement and external factors. The 'Sleep Quality' and 'Stages' are estimates based on movement data and should be used as a general guide, not as clinical data.")
-                        .font(.body)
-                        .foregroundColor(.sleepTextPrimary)
-                    
-                    Text("By using this application, you acknowledge that you have read and understood this disclaimer.")
-                        .font(.footnote)
-                        .foregroundColor(.sleepTextSecondary)
-                        .padding(.top)
+                        .foregroundStyle(.white)
                 }
-                .padding()
+                .padding(.top, isOnboarding ? 40 : 0)
+                
+                Text("Not a Medical Device")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                
+                Text("SleepLedger is designed for informational purposes only. It is not a medical device and should not be used to diagnose, treat, cure, or prevent any medical conditions or sleep disorders.")
+                    .foregroundStyle(.gray)
+                
+                Text("Consult a Professional")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                
+                Text("If you have concerns about your sleep health or suspect you may have a sleep disorder (such as sleep apnea or insomnia), please consult a qualified healthcare professional.")
+                    .foregroundStyle(.gray)
+                
+                Text("Accuracy of Data")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                
+                Text("While we strive for accuracy, movement-based sleep tracking has limitations compared to clinical polysomnography. Data provided by this app should be viewed as estimates/trends rather than absolute medical data.")
+                    .foregroundStyle(.gray)
+                
+                if !isOnboarding {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Text("Close")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(hex: "1C1C1E"))
+                            .cornerRadius(12)
+                    }
+                    .padding(.top, 20)
+                }
             }
+            .padding()
         }
-        .background(Color.sleepBackground)
+        .background(Color.black.ignoresSafeArea())
     }
 }
 
 #Preview {
     DisclaimerView()
-        .preferredColorScheme(.dark)
 }
