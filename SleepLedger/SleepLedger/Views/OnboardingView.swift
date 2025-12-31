@@ -29,19 +29,22 @@ struct OnboardingView: View {
                 // Page 1: Welcome
                 welcomePage.tag(0)
                 
-                // Page 2: Sleep Goal
-                sleepGoalPage.tag(1)
+                // Page 2: Medical Disclaimer
+                disclaimerPage.tag(1)
                 
-                // Page 3: Smart Alarm
-                smartAlarmPage.tag(2)
+                // Page 3: Sleep Goal
+                sleepGoalPage.tag(2)
                 
-                // Page 4: Wake Time
+                // Page 4: Smart Alarm
+                smartAlarmPage.tag(3)
+                
+                // Page 5: Wake Time
                 if smartAlarmEnabled {
-                    wakeTimePage.tag(3)
+                    wakeTimePage.tag(4)
                 }
                 
                 // Final Page: Ready
-                readyPage.tag(smartAlarmEnabled ? 4 : 3)
+                readyPage.tag(smartAlarmEnabled ? 5 : 4)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
@@ -88,6 +91,30 @@ struct OnboardingView: View {
                 .padding(.bottom, 40)
         }
         .padding()
+    }
+    
+    // MARK: - Disclaimer Page
+    
+    private var disclaimerPage: some View {
+        VStack(spacing: 0) {
+            DisclaimerView(isOnboarding: true)
+            
+            Button {
+                withAnimation {
+                    currentPage = 2
+                }
+            } label: {
+                Text("I Accept & Continue")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 60)
+        }
     }
     
     // MARK: - Sleep Goal Page

@@ -34,6 +34,9 @@ struct SettingsView: View {
                 // Data & Privacy Section
                 dataPrivacySection
                 
+                // Legal Section
+                legalSection
+                
                 // About Section
                 aboutSection
             }
@@ -210,6 +213,26 @@ struct SettingsView: View {
             modelContext.delete(session)
         }
         try? modelContext.save()
+    }
+    
+    // MARK: - Legal Section
+    
+    private var legalSection: some View {
+        Section {
+            NavigationLink {
+                DisclaimerView()
+            } label: {
+                HStack {
+                    Image(systemName: "hand.raised.fill")
+                        .foregroundColor(.sleepWarning)
+                    Text("Medical Disclaimer")
+                        .foregroundColor(.sleepTextPrimary)
+                }
+            }
+        } header: {
+            Text("Legal")
+                .foregroundColor(.sleepTextSecondary)
+        }
     }
     
     // MARK: - About Section
