@@ -189,7 +189,7 @@ class SleepTrackingService: ObservableObject {
         guard let targetWake = session.targetWakeTime else { return }
         
         let now = Date()
-        let windowStart = targetWake.addingTimeInterval(-20 * 60) // 20 minutes before
+        let windowStart = targetWake.addingTimeInterval(-30 * 60) // 30 minutes before
         
         // Only check if we're within the window
         guard now >= windowStart && now <= targetWake else { return }

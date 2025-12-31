@@ -175,8 +175,8 @@ final class SleepSession {
               let targetWake = targetWakeTime,
               !movementData.isEmpty else { return nil }
         
-        // 20-minute window before target wake time
-        let windowStart = targetWake.addingTimeInterval(-20 * 60)
+        // 30-minute window before target wake time
+        let windowStart = targetWake.addingTimeInterval(-30 * 60)
         
         // Find movement data points in the window
         let windowData = movementData.filter { data in

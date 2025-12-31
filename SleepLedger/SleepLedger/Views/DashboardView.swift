@@ -89,40 +89,18 @@ struct DashboardView: View {
     // MARK: - Punch Button
     
     private var punchButton: some View {
-        Button(action: handlePunchAction) {
-            VStack(spacing: 16) {
-                Image(systemName: trackingService.isTracking ? "stop.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.white)
-                
-                Text(trackingService.isTracking ? "Punch Out" : "Punch In")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                if !trackingService.isTracking {
-                    Text("Start tracking your sleep")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                } else if let session = trackingService.currentSession {
-                    Text("Started \(timeAgo(from: session.startTime))")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 40)
-            .background(
-                LinearGradient(
-                    colors: trackingService.isTracking ? [.sleepError, .sleepWarning] : [.sleepPrimary, .sleepSecondary],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+        CircularPunchButton(
+            isTracking: trackingService.isTracking,
+            onPunchIn: { wakeTime, smartAlarmEnabled in
+                trackingService.punchIn(
+                    smartAlarmEnabled: smartAlarmEnabled,
+                    targetWakeTime: smartAlarmEnabled ? wakeTime : nil
                 )
-            )
-            .cornerRadius(24)
-            .shadow(color: (trackingService.isTracking ? Color.sleepError : Color.sleepPrimary).opacity(0.5), radius: 20, x: 0, y: 10)
-        }
-        .buttonStyle(ScaleButtonStyle())
+            },
+            onPunchOut: {
+                trackingService.punchOut()
+            }
+        )
     }
     
     // MARK: - Current Session Card
