@@ -18,7 +18,7 @@ struct SleepView: View {
         let context = ModelContext(ModelContainer.shared)
         _trackingService = StateObject(wrappedValue: SleepTrackingService(modelContext: context))
     }
-    
+        var body: some View {
         GeometryReader { outerGeometry in
             ZStack {
                 // Abstract Background Ambience
@@ -30,12 +30,19 @@ struct SleepView: View {
                         headerSection
                             .padding(.top, 20)
                         
-                        // Sleep Debt Ring
-                        let totalDebt = trackingService.getCumulativeSleepDebt(days: 7)
+                        // Calculated Metrics (using @Query data to avoid blocking fetches)
+                        let filtered = allSessions.filter { $0.endTime != nil }
+                        let recentSessions = filtered.filter { $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())! }
+                        
+                        let totalDebt = recentSessions.compactMap { $0.sleepDebt }.reduce(0, +)
                         let hours = Int(abs(totalDebt))
                         let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
                         let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
                         
+                        let avgDuration = recentSessions.isEmpty ? 0 : (recentSessions.compactMap { $0.durationInHours }.reduce(0, +) / Double(recentSessions.count))
+                        let avgQuality = recentSessions.isEmpty ? 0 : (recentSessions.compactMap { $0.sleepQualityScore }.reduce(0, +) / Double(recentSessions.count))
+                        
+                        // Sleep Debt Ring
                         let ringSize = min(outerGeometry.size.width * 0.6, outerGeometry.size.height * 0.28)
                         
                         SleepDebtRing(
@@ -47,8 +54,12 @@ struct SleepView: View {
                         .frame(width: ringSize, height: ringSize)
                         .padding(.vertical, 10)
                         
-                        // Stats Row
-                        statsSummaryRow
+                        // Stats Row (Passing pre-calculated values)
+                        HStack(spacing: 8) {
+                            StatChip(label: "Average", value: formatDuration(avgDuration))
+                            StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
+                            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
+                        }
                         
                         // Main Action Button
                         PulseButton(isTracking: trackingService.isTracking) {
@@ -58,7 +69,7 @@ struct SleepView: View {
                         .padding(.vertical, 5)
                         
                         // Recent Session Card
-                        if let lastSession = allSessions.filter({ $0.endTime != nil }).first {
+                        if let lastSession = filtered.first {
                             TactileTimeCard(lastSession: lastSession)
                                 .scaleEffect(outerGeometry.size.height < 700 ? 0.9 : 1.0)
                         }
@@ -121,16 +132,6 @@ struct SleepView: View {
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.white.opacity(0.05), lineWidth: 1))
             }
-        }
-    }
-    
-    // MARK: - Stats Summary
-    
-    private var statsSummaryRow: some View {
-        HStack(spacing: 12) {
-            StatChip(label: "Average", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
-            StatChip(label: "Quality", value: String(format: "%.0f%%", trackingService.getAverageSleepQuality(days: 7)))
-            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
         }
     }
     
