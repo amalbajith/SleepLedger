@@ -19,8 +19,7 @@ struct SleepView: View {
             ScrollView {
                 VStack(spacing: 24) {          // fixed spacing instead of geometry-based
                     headerSection
-                        .padding(.top, 20)
-                    
+                        
                     // --- Metrics ---
                     let filtered = allSessions.filter { $0.endTime != nil }
                     let recentSessions = filtered.filter {
@@ -48,9 +47,8 @@ struct SleepView: View {
                         progress: progress,
                         isDeficit: totalDebt < 0
                     )
-                    .frame(maxWidth: 260, maxHeight: 260)  // cap the size
-                    .frame(maxWidth: .infinity)            // center horizontally
-                    .padding(.vertical, 10)
+                    .frame(width: 220, height: 220)   // tighter ring
+                    .padding(.top, 8)
                     
                     // Stats row
                     HStack(spacing: 8) {
@@ -58,28 +56,31 @@ struct SleepView: View {
                         StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
                         StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
                     }
+                    .padding(.top, 4)
                     
                     // Main action button
                     PulseButton(isTracking: trackingService.isTracking) {
                         handlePunchAction()
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 5)
+                    .padding(.top, 12)   // smaller gap
+                    .padding(.bottom, 8)
                     
                     // Recent session card
                     if let lastSession = filtered.first {
                         TactileTimeCard(lastSession: lastSession)
                     }
                     
-                    Spacer(minLength: 80)
+                    Spacer(minLength: 40)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 80)
             }
             .scrollIndicators(.hidden)
         }
         .background(Color.sleepBackground)
-        .ignoresSafeArea(.all, edges: .top)
+        .ignoresSafeArea(.all, edges: .bottom)
     }
     
     // MARK: - Background
@@ -116,6 +117,8 @@ struct SleepView: View {
                     .font(.system(size: 28, weight: .light))
                     .foregroundColor(.white)
             }
+            .padding(.leading, 4) // Nudge right to avoid screen edge clipping
+            
             Spacer()
             
             Button {

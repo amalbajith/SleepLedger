@@ -19,7 +19,7 @@ struct PulseButton: View {
                 // Background Glow
                 Circle()
                     .fill(Color.sleepPrimary.opacity(0.3))
-                    .frame(width: 96, height: 96)
+                    .frame(width: 88, height: 88)
                     .scaleEffect(animatePulse ? 1.2 : 1.0)
                     .opacity(animatePulse ? 0.0 : 0.6)
                 
@@ -32,7 +32,7 @@ struct PulseButton: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 80, height: 80)
+                    .frame(width: 72, height: 72)
                     .shadow(color: Color.sleepPrimary.opacity(0.5), radius: 20)
                 
                 // Icon
