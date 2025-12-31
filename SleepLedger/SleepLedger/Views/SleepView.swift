@@ -2,294 +2,186 @@
 //  SleepView.swift
 //  SleepLedger
 //
-//  Main sleep tracking screen - optimized for quick punch in/out
+//  Main sleep tracking dashboard - Rebuilt for total UI overhaul
 //
 
 import SwiftUI
 import SwiftData
 
 struct SleepView: View {
-    @Environment(\.modelContext) private var modelContext
     @StateObject private var trackingService: SleepTrackingService
-    @StateObject private var motionService = MotionDetectionService()
     
     @Query(sort: \SleepSession.startTime, order: .reverse) private var allSessions: [SleepSession]
+    @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
     
     init() {
         let context = ModelContext(ModelContainer.shared)
-        let motion = MotionDetectionService()
-        _trackingService = StateObject(wrappedValue: SleepTrackingService(modelContext: context, motionService: motion))
-        _motionService = StateObject(wrappedValue: motion)
+        _trackingService = StateObject(wrappedValue: SleepTrackingService(modelContext: context))
     }
     
     var body: some View {
-        NavigationStack {
+        ZStack {
+            // Abstract Background Ambience
+            backgroundAmbience
+            
             ScrollView {
                 VStack(spacing: 32) {
-                    // Hero: Punch Button
-                    punchButton
-                        .padding(.top, 20)
+                    // Header
+                    headerSection
+                        .padding(.top, 40)
                     
-                    // Current Session or Last Night Summary
-                    if trackingService.isTracking, let session = trackingService.currentSession {
-                        currentSessionCard(session: session)
-                    } else if let lastSession = completedSessions.first {
-                        lastNightSummary(session: lastSession)
+                    // Ring Gauge
+                    RingGauge(
+                        debtHours: trackingService.getCumulativeSleepDebt(days: 7),
+                        goalHours: sleepGoalHours * 7
+                    )
+                    .padding(.vertical, 20)
+                    
+                    // Stats Row
+                    statsSummaryRow
+                    
+                    // Main Action Button
+                    PulseButton(isTracking: trackingService.isTracking) {
+                        handlePunchAction()
+                    }
+                    .padding(.vertical, 10)
+                    
+                    // Recent Session Card
+                    if let lastSession = allSessions.filter({ $0.endTime != nil }).first {
+                        TactileTimeCard(lastSession: lastSession)
                     }
                     
-                    // Quick Recent Sessions (last 3)
-                    if !completedSessions.isEmpty {
-                        recentSessionsSection
-                    }
+                    Spacer(minLength: 100)
                 }
-                .padding()
+                .padding(.horizontal, 24)
             }
-            .background(Color.sleepBackground)
-            .navigationTitle("Sleep")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(.sleepTextSecondary)
-                    }
-                }
+            .scrollIndicators(.hidden)
+        }
+        .background(Color.sleepBackground)
+        .ignoresSafeArea(.all, edges: .top)
+    }
+    
+    // MARK: - Background Components
+    
+    private var backgroundAmbience: some View {
+        ZStack {
+            Circle()
+                .fill(Color.sleepPrimary.opacity(0.15))
+                .frame(width: 600, height: 600)
+                .blur(radius: 100)
+                .offset(x: -200, y: -200)
+            
+            Circle()
+                .fill(Color.sleepPrimaryGlow.opacity(0.1))
+                .frame(width: 400, height: 400)
+                .blur(radius: 100)
+                .offset(x: 200, y: 400)
+        }
+        .ignoresSafeArea()
+    }
+    
+    // MARK: - Header
+    
+    private var headerSection: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(Date().formatted(.dateTime.weekday(.wide).month().day()))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.sleepTextSecondary)
+                    .textCase(.uppercase)
+                    .tracking(1)
+                
+                Text(greeting)
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(.white)
             }
-            .onAppear {
-                trackingService.defaultSleepGoalHours = 8.0
+            Spacer()
+            
+            Button {
+                // Notifications or Settings
+            } label: {
+                Image(systemName: "bell")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color(white: 0.1))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.05), lineWidth: 1))
             }
         }
     }
     
-    // MARK: - Punch Button
+    // MARK: - Stats Summary
     
-    private var punchButton: some View {
-        CircularPunchButton(
-            isTracking: trackingService.isTracking,
-            onPunchIn: {
-                let smartAlarmEnabled = UserDefaults.standard.bool(forKey: "smartAlarmEnabled")
-                let wakeTimeInterval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
-                
-                let wakeTime: Date?
-                if smartAlarmEnabled && wakeTimeInterval > 0 {
-                    wakeTime = Date(timeIntervalSinceReferenceDate: wakeTimeInterval)
-                } else {
-                    wakeTime = nil
-                }
-                
-                trackingService.punchIn(
-                    smartAlarmEnabled: smartAlarmEnabled,
-                    targetWakeTime: wakeTime
-                )
-            },
-            onPunchOut: {
-                trackingService.punchOut()
-            }
-        )
-    }
-    
-    // MARK: - Current Session Card
-    
-    private func currentSessionCard(session: SleepSession) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "moon.zzz.fill")
-                    .foregroundColor(.sleepPrimary)
-                Text("Sleeping Now")
-                    .font(.headline)
-                    .foregroundColor(.sleepTextPrimary)
-                Spacer()
-                Circle()
-                    .fill(Color.sleepSuccess)
-                    .frame(width: 8, height: 8)
-            }
-            
-            Divider().background(Color.sleepCardBorder)
-            
-            HStack(spacing: 32) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Fell Asleep")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
-                    Text(session.startTime.formatted(date: .omitted, time: .shortened))
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.sleepTextPrimary)
-                }
-                
-                if let duration = session.duration {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("So Far")
-                            .font(.caption)
-                            .foregroundColor(.sleepTextSecondary)
-                        Text(formatDuration(duration))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.sleepPrimary)
-                    }
-                }
-            }
-        }
-        .padding()
-        .sleepCard()
-    }
-    
-    // MARK: - Last Night Summary
-    
-    private func lastNightSummary(session: SleepSession) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "sunrise.fill")
-                    .foregroundColor(.sleepSecondary)
-                Text("Last Night")
-                    .font(.headline)
-                    .foregroundColor(.sleepTextPrimary)
-                Spacer()
-                if let quality = session.sleepQualityScore {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(qualityColor(quality))
-                            .frame(width: 8, height: 8)
-                        Text(String(format: "%.0f%%", quality))
-                            .font(.subheadline)
-                            .foregroundColor(.sleepTextSecondary)
-                    }
-                }
-            }
-            
-            Divider().background(Color.sleepCardBorder)
-            
-            HStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Slept")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
-                    Text(String(format: "%.1fh", session.durationInHours ?? 0))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.sleepPrimary)
-                }
-                
-                if let debt = session.sleepDebt, debt != 0 {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Goal")
-                            .font(.caption)
-                            .foregroundColor(.sleepTextSecondary)
-                        HStack(spacing: 4) {
-                            Image(systemName: debt >= 0 ? "arrow.up" : "arrow.down")
-                                .font(.caption)
-                            Text(String(format: "%.1fh", abs(debt)))
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(debt >= 0 ? .sleepSuccess : .sleepError)
-                    }
-                }
-            }
-        }
-        .padding()
-        .sleepCard()
-    }
-    
-    // MARK: - Recent Sessions Section
-    
-    private var recentSessionsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Recent")
-                    .font(.headline)
-                    .foregroundColor(.sleepTextPrimary)
-                Spacer()
-                NavigationLink(destination: JournalView()) {
-                    Text("See All")
-                        .font(.subheadline)
-                        .foregroundColor(.sleepPrimary)
-                }
-            }
-            
-            VStack(spacing: 12) {
-                ForEach(Array(completedSessions.prefix(3))) { session in
-                    CompactSessionRow(session: session)
-                }
-            }
+    private var statsSummaryRow: some View {
+        HStack(spacing: 12) {
+            StatChip(label: "7-Day Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
+            StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)))
+            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
         }
     }
     
     // MARK: - Helpers
     
-    private var completedSessions: [SleepSession] {
-        allSessions.filter { $0.endTime != nil }
-    }
-    
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        return "\(hours)h \(minutes)m"
-    }
-    
-    private func qualityColor(_ quality: Double) -> Color {
-        switch quality {
-        case 80...100: return .sleepSuccess
-        case 60..<80: return .sleepPrimary
-        default: return .sleepWarning
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<12: return "Good Morning"
+        case 12..<18: return "Good Afternoon"
+        default: return "Good Evening"
         }
+    }
+    
+    private func handlePunchAction() {
+        if trackingService.isTracking {
+            trackingService.punchOut()
+        } else {
+            let smartAlarmEnabled = UserDefaults.standard.bool(forKey: "smartAlarmEnabled")
+            let wakeTimeInterval = UserDefaults.standard.double(forKey: "wakeTimeInterval")
+            
+            let wakeTime: Date?
+            if smartAlarmEnabled && wakeTimeInterval > 0 {
+                wakeTime = Date(timeIntervalSinceReferenceDate: wakeTimeInterval)
+            } else {
+                wakeTime = nil
+            }
+            
+            trackingService.punchIn(
+                smartAlarmEnabled: smartAlarmEnabled,
+                targetWakeTime: wakeTime
+            )
+        }
+    }
+    
+    private func formatDuration(_ hours: Double) -> String {
+        let h = Int(hours)
+        let m = Int((hours - Double(h)) * 60)
+        return "\(h)h \(m)m"
     }
 }
 
-// MARK: - Compact Session Row
+// MARK: - Supporting Views
 
-struct CompactSessionRow: View {
-    let session: SleepSession
+struct StatChip: View {
+    let label: String
+    let value: String
+    var valueColor: Color = .white
     
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 2) {
-                Text(session.startTime.formatted(.dateTime.day()))
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.sleepTextPrimary)
-                Text(session.startTime.formatted(.dateTime.month(.abbreviated)))
-                    .font(.caption2)
-                    .foregroundColor(.sleepTextSecondary)
-            }
-            .frame(width: 40)
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.sleepTextTertiary)
+                .textCase(.uppercase)
+                .tracking(0.5)
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text(String(format: "%.1fh", session.durationInHours ?? 0))
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.sleepTextPrimary)
-                
-                Text(session.startTime.formatted(date: .omitted, time: .shortened))
-                    .font(.caption)
-                    .foregroundColor(.sleepTextSecondary)
-            }
-            
-            Spacer()
-            
-            if let quality = session.sleepQualityScore {
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(qualityColor(quality))
-                        .frame(width: 6, height: 6)
-                    Text(String(format: "%.0f%%", quality))
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
-                }
-            }
+            Text(value)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(valueColor)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(Color.sleepCardBackground)
-        .cornerRadius(8)
-    }
-    
-    private func qualityColor(_ quality: Double) -> Color {
-        switch quality {
-        case 80...100: return .sleepSuccess
-        case 60..<80: return .sleepPrimary
-        default: return .sleepWarning
-        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .sleepGlassPanel()
     }
 }
 

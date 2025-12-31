@@ -80,13 +80,16 @@ struct JournalView: View {
             ForEach(TimePeriod.allCases, id: \.self) { period in
                 Button(action: { selectedPeriod = period }) {
                     Text(period.rawValue)
-                        .font(.subheadline)
-                        .fontWeight(selectedPeriod == period ? .semibold : .regular)
-                        .foregroundColor(selectedPeriod == period ? .black : .sleepTextSecondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(selectedPeriod == period ? Color.white : Color.sleepCardBackground)
+                        .font(.system(size: 13, weight: selectedPeriod == period ? .bold : .medium))
+                        .foregroundColor(selectedPeriod == period ? .white : .sleepTextSecondary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(selectedPeriod == period ? Color.sleepPrimary.opacity(0.2) : Color.white.opacity(0.05))
                         .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(selectedPeriod == period ? Color.sleepPrimary.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
+                        )
                 }
             }
         }

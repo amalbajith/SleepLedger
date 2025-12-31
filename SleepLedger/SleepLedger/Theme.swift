@@ -2,55 +2,39 @@
 //  Theme.swift
 //  SleepLedger
 //
-//  Pure black & white monochrome with proper contrast
+//  Vibrant dark theme with glassmorphism
 //
 
 import SwiftUI
 
 extension Color {
-    // MARK: - Black & White Monochrome
+    // MARK: - Dark UI Palette
     
     /// Pure black background
     static let sleepBackground = Color(hex: "#000000")
     
-    /// Card background (dark gray)
-    static let sleepCardBackground = Color(hex: "#1C1C1E")
+    /// Card background (dark gray/tactile)
+    static let sleepCardBackground = Color(hex: "#121212")
     
-    /// Card border (medium gray)
-    static let sleepCardBorder = Color(hex: "#3A3A3C")
+    /// Glass panel background
+    static let sleepGlassBackground = Color(white: 1, opacity: 0.05)
     
-    /// Primary accent (white)
-    static let sleepPrimary = Color(hex: "#FFFFFF")
+    /// Primary accent (vibrant purple)
+    static let sleepPrimary = Color(hex: "#5b13ec")
+    static let sleepPrimaryGlow = Color(hex: "#7c3aed")
     
-    /// Secondary accent (light gray)
-    static let sleepSecondary = Color(hex: "#D1D1D6")
+    /// Functional colors
+    static let sleepSuccess = Color(hex: "#10b981") // surplus green
+    static let sleepError = Color(hex: "#ff4d4d")   // debt red
+    static let sleepWarning = Color(hex: "#fbbf24") // amber
     
-    /// Deep sleep indicator (medium-light gray)
-    static let sleepDeepSleep = Color(hex: "#AEAEB2")
+    /// Text hierarchy
+    static let sleepTextPrimary = Color.white
+    static let sleepTextSecondary = Color.gray.opacity(0.8)
+    static let sleepTextTertiary = Color.gray.opacity(0.5)
     
-    /// Light sleep indicator (light gray)
-    static let sleepLightSleep = Color(hex: "#D1D1D6")
-    
-    /// Awake indicator (white)
-    static let sleepAwake = Color(hex: "#FFFFFF")
-    
-    /// Success/positive (white)
-    static let sleepSuccess = Color(hex: "#FFFFFF")
-    
-    /// Warning (medium-light gray)
-    static let sleepWarning = Color(hex: "#AEAEB2")
-    
-    /// Error/negative (medium gray)
-    static let sleepError = Color(hex: "#8E8E93")
-    
-    /// Primary text (white) - high contrast
-    static let sleepTextPrimary = Color(hex: "#FFFFFF")
-    
-    /// Secondary text (light gray) - medium contrast
-    static let sleepTextSecondary = Color(hex: "#AEAEB2")
-    
-    /// Tertiary text (medium gray) - low contrast
-    static let sleepTextTertiary = Color(hex: "#636366")
+    /// Border colors
+    static let sleepGlassBorder = Color(white: 1, opacity: 0.08)
     
     // MARK: - Hex Color Initializer
     
@@ -82,13 +66,24 @@ extension Color {
 // MARK: - Custom View Modifiers
 
 extension View {
+    func sleepGlassPanel() -> some View {
+        self
+            .background(.ultraThinMaterial.opacity(0.5))
+            .background(Color.sleepGlassBackground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.sleepGlassBorder, lineWidth: 1)
+            )
+    }
+    
     func sleepCard() -> some View {
         self
             .background(Color.sleepCardBackground)
-            .cornerRadius(12)
+            .cornerRadius(24)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.sleepCardBorder, lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.sleepGlassBorder, lineWidth: 1)
             )
     }
 }

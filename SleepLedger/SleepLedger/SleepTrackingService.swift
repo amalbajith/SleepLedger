@@ -152,6 +152,28 @@ class SleepTrackingService: ObservableObject {
         }
     }
     
+    /// Get average sleep duration over the last N days
+    func getAverageSleepDuration(days: Int = 7) -> Double {
+        let calendar = Calendar.current
+        let startDate = calendar.date(byAdding: .day, value: -days, to: Date())!
+        
+        let descriptor = FetchDescriptor<SleepSession>(
+            predicate: #Predicate { session in
+                session.startTime >= startDate && session.endTime != nil
+            }
+        )
+        
+        do {
+            let sessions = try modelContext.fetch(descriptor)
+            let durations = sessions.compactMap { $0.durationInHours }
+            guard !durations.isEmpty else { return 0.0 }
+            return durations.reduce(0, +) / Double(durations.count)
+        } catch {
+            print("❌ Error fetching avg duration: \(error)")
+            return 0.0
+        }
+    }
+    
     // MARK: - Private Methods
     
     /// Handle incoming movement data from motion service

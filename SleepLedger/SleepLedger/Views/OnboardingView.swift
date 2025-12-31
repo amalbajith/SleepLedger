@@ -61,7 +61,7 @@ struct OnboardingView: View {
                 .font(.system(size: 100))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.sleepPrimary, .sleepSecondary],
+                        colors: [.sleepPrimary, .sleepPrimaryGlow],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -183,7 +183,7 @@ struct OnboardingView: View {
             
             Image(systemName: "brain.head.profile.fill")
                 .font(.system(size: 80))
-                .foregroundColor(.sleepSecondary)
+                .foregroundColor(.sleepPrimary)
             
             VStack(spacing: 16) {
                 Text("Smart Alarm")
@@ -317,7 +317,7 @@ struct OnboardingView: View {
                     .padding()
                     .background(
                         LinearGradient(
-                            colors: [.sleepPrimary, .sleepSecondary],
+                            colors: [.sleepPrimary, .sleepPrimaryGlow],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
