@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct SleepView: View {
+    // MARK: - Data & State
     @StateObject private var trackingService: SleepTrackingService
-    
     @Query(sort: \SleepSession.startTime, order: .reverse) private var allSessions: [SleepSession]
     @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
     
@@ -14,78 +14,81 @@ struct SleepView: View {
     
     var body: some View {
         ZStack {
-            backgroundAmbience
+            // 1. Dynamic Background
+            backgroundAmbiencePane
             
-            ScrollView {
-                VStack(spacing: 24) {          // fixed spacing instead of geometry-based
+            // 2. Main Content
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 28) {
+                    // Header
                     headerSection
-                        
-                    // --- Metrics ---
-                    let filtered = allSessions.filter { $0.endTime != nil }
-                    let recentSessions = filtered.filter {
-                        $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+                        .padding(.top, 8)
+                    
+                    // Logic: Derived Metrics (using @Query data for instant UI updates)
+                    let completed = allSessions.filter { $0.endTime != nil }
+                    let weekSessions = completed.filter { 
+                        $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())! 
                     }
                     
-                    let totalDebt = recentSessions.compactMap { $0.sleepDebt }.reduce(0, +)
+                    let totalDebt = weekSessions.compactMap { $0.sleepDebt }.reduce(0, +)
                     let hours = Int(abs(totalDebt))
                     let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
-                    let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
+                    let debtProgress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
                     
-                    let avgDuration = recentSessions.isEmpty
-                        ? 0
-                        : (recentSessions.compactMap { $0.durationInHours }.reduce(0, +)
-                           / Double(recentSessions.count))
-                    let avgQuality = recentSessions.isEmpty
-                        ? 0
-                        : (recentSessions.compactMap { $0.sleepQualityScore }.reduce(0, +)
-                           / Double(recentSessions.count))
+                    let avgDuration = weekSessions.isEmpty ? 0 : (weekSessions.compactMap { $0.durationInHours }.reduce(0, +) / Double(weekSessions.count))
+                    let avgQuality = weekSessions.isEmpty ? 0 : (weekSessions.compactMap { $0.sleepQualityScore }.reduce(0, +) / Double(weekSessions.count))
                     
-                    // Sleep Debt Ring
+                    // Hero Section: Sleep Debt Ring
                     SleepDebtRing(
                         debtHours: hours,
                         debtMinutes: minutes,
-                        progress: progress,
+                        progress: debtProgress,
                         isDeficit: totalDebt < 0
                     )
-                    .frame(width: 220, height: 220)   // tighter ring
-                    .padding(.top, 8)
+                    .frame(width: 220, height: 220)
+                    .padding(.vertical, 8)
                     
-                    // Stats row
-                    HStack(spacing: 8) {
+                    // Mid Section: Quick Stats (3-column layout)
+                    HStack(spacing: 12) {
                         StatChip(label: "Average", value: formatDuration(avgDuration))
                         StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
-                        StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
+                        StatChip(label: "Balance", value: totalDebt >= 0 ? "Surplus" : "Deficit", valueColor: totalDebt >= 0 ? .sleepSuccess : .sleepError)
                     }
-                    .padding(.top, 4)
                     
-                    // Main action button
+                    // Action: Punch Button
                     PulseButton(isTracking: trackingService.isTracking) {
                         handlePunchAction()
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 12)   // smaller gap
-                    .padding(.bottom, 8)
+                    .padding(.vertical, 12)
                     
-                    // Recent session card
-                    if let lastSession = filtered.first {
-                        TactileTimeCard(lastSession: lastSession)
+                    // Footer: Last Night Summary
+                    if let lastSession = completed.first {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("RECENT HISTORY")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.sleepTextTertiary)
+                                .tracking(1)
+                                .padding(.leading, 4)
+                            
+                            TactileTimeCard(lastSession: lastSession)
+                        }
                     }
                     
-                    Spacer(minLength: 40)
+                    Spacer(minLength: 100) // Space for floating tab bar
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
-                .padding(.bottom, 80)
             }
-            .scrollIndicators(.hidden)
         }
         .background(Color.sleepBackground)
-        .ignoresSafeArea(.all, edges: .bottom)
+        // Ensure top is NOT ignored to avoid notch collision
+        // Bottom is ignored to let background bleed behind tab bar
+        .ignoresSafeArea(.container, edges: .bottom)
     }
     
-    // MARK: - Background
+    // MARK: - Components
     
-    private var backgroundAmbience: some View {
+    private var backgroundAmbiencePane: some View {
         ZStack {
             Circle()
                 .fill(Color.sleepPrimary.opacity(0.15))
@@ -102,35 +105,32 @@ struct SleepView: View {
         .ignoresSafeArea()
     }
     
-    // MARK: - Header
-    
     private var headerSection: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(Date().formatted(.dateTime.weekday(.wide).month().day()))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.sleepTextSecondary)
                     .textCase(.uppercase)
-                    .tracking(1)
+                    .tracking(1.2)
                 
                 Text(greeting)
-                    .font(.system(size: 28, weight: .light))
+                    .font(.system(size: 32, weight: .light))
                     .foregroundColor(.white)
             }
-            .padding(.leading, 4) // Nudge right to avoid screen edge clipping
+            .padding(.leading, 8) // Nudge away from screen edge
             
             Spacer()
             
             Button {
-                // Notifications or Settings
+                // Settings or Notifications Action
             } label: {
-                Image(systemName: "bell")
-                    .font(.system(size: 20))
+                Image(systemName: "bell.badge")
+                    .font(.system(size: 18))
                     .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color(white: 0.1))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white.opacity(0.05), lineWidth: 1))
+                    .frame(width: 48, height: 48)
+                    .background(Circle().fill(Color.white.opacity(0.05)))
+                    .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 1))
             }
         }
     }
@@ -174,18 +174,17 @@ struct SleepView: View {
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - Supporting Components
 
 struct StatChip: View {
     let label: String
     let value: String
     var valueColor: Color = .white
-    var compact: Bool = false
     
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.sleepTextTertiary)
                 .textCase(.uppercase)
                 .tracking(0.5)
@@ -201,9 +200,11 @@ struct StatChip: View {
         .frame(maxWidth: .infinity)
         .frame(height: 68)
         .padding(12)
-        .background(.ultraThinMaterial.opacity(0.5))
-        .background(Color.sleepGlassBackground)
-        .cornerRadius(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial.opacity(0.3))
+                .background(Color.sleepGlassBackground)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.sleepGlassBorder, lineWidth: 1)
