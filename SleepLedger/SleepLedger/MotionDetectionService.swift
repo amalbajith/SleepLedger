@@ -80,22 +80,21 @@ class MotionDetectionService: ObservableObject {
         
         // Start accelerometer updates
         motionManager.startAccelerometerUpdates(to: operationQueue) { [weak self] data, error in
-            guard let self = self, let data = data else {
-                if let error = error {
-                    print("❌ Accelerometer error: \(error.localizedDescription)")
-                }
-                return
-            }
+            guard let self = self else { return }
             
-            Task { @MainActor in
-                self.processAccelerometerData(data)
+            if let data = data {
+                Task { @MainActor in
+                    self.processAccelerometerData(data)
+                }
+            } else if let error = error {
+                print("❌ Accelerometer error: \(error.localizedDescription)")
             }
         }
         
         // Start periodic analysis timer (every minute)
         analysisTimer = Timer.scheduledTimer(withTimeInterval: analysisWindowSize, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
             Task { @MainActor in
-                guard let self = self else { return }
                 self.analyzeMovementWindow()
             }
         }
