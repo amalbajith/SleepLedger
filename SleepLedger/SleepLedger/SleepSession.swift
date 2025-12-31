@@ -163,8 +163,16 @@ final class SleepSession {
     }
     
     /// Calculate sleep debt based on goal
+    /// Only calculates debt for sessions longer than 1 hour to prevent abuse
     private func calculateSleepDebt() {
         guard let hours = durationInHours else { return }
+        
+        // Ignore sessions shorter than 1 hour (prevents rapid punch in/out creating fake deficit)
+        if hours < 1.0 {
+            self.sleepDebt = 0.0
+            return
+        }
+        
         self.sleepDebt = hours - sleepGoalHours
     }
     

@@ -85,76 +85,78 @@ struct SessionCard: View {
     let session: SleepSession
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(session.startTime.formatted(date: .abbreviated, time: .omitted))
+        HStack(spacing: 16) {
+            // Date indicator (Apple Health style)
+            VStack(spacing: 4) {
+                Text(session.startTime.formatted(.dateTime.day()))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.sleepTextPrimary)
+                
+                Text(session.startTime.formatted(.dateTime.month(.abbreviated)))
+                    .font(.caption)
+                    .foregroundColor(.sleepTextSecondary)
+            }
+            .frame(width: 50)
+            
+            // Vertical divider
+            Rectangle()
+                .fill(Color.sleepCardBorder)
+                .frame(width: 1)
+            
+            // Session info
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(String(format: "%.1f hrs", session.durationInHours ?? 0))
                         .font(.headline)
                         .foregroundColor(.sleepTextPrimary)
                     
-                    Text("\(session.startTime.formatted(date: .omitted, time: .shortened)) - \(session.endTime?.formatted(date: .omitted, time: .shortened) ?? "")")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
-                }
-                
-                Spacer()
-                
-                if let quality = session.sleepQualityScore {
-                    QualityBadge(quality: quality)
-                }
-            }
-            
-            Divider()
-                .background(Color.sleepCardBorder)
-            
-            // Stats Grid
-            HStack(spacing: 20) {
-                StatItem(
-                    icon: "clock.fill",
-                    label: "Duration",
-                    value: String(format: "%.1fh", session.durationInHours ?? 0),
-                    color: .sleepPrimary
-                )
-                
-                if let debt = session.sleepDebt {
-                    StatItem(
-                        icon: "chart.line.downtrend.xyaxis",
-                        label: "Debt",
-                        value: String(format: "%+.1fh", debt),
-                        color: debt >= 0 ? .sleepSuccess : .sleepError
-                    )
-                }
-                
-                if let deepSleep = session.deepSleepDuration {
-                    StatItem(
-                        icon: "moon.fill",
-                        label: "Deep",
-                        value: String(format: "%.0fm", deepSleep),
-                        color: .sleepDeepSleep
-                    )
-                }
-            }
-            
-            // Tags
-            if !session.tags.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(session.tags, id: \.self) { tag in
-                            Text(tag)
-                                .font(.caption)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.sleepPrimary.opacity(0.2))
-                                .foregroundColor(.sleepPrimary)
-                                .cornerRadius(12)
+                    Spacer()
+                    
+                    if let quality = session.sleepQualityScore {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(qualityColor(quality))
+                                .frame(width: 8, height: 8)
+                            Text(String(format: "%.0f%%", quality))
+                                .font(.subheadline)
+                                .foregroundColor(.sleepTextSecondary)
                         }
                     }
                 }
+                
+                Text("\(session.startTime.formatted(date: .omitted, time: .shortened)) - \(session.endTime?.formatted(date: .omitted, time: .shortened) ?? "")")
+                    .font(.caption)
+                    .foregroundColor(.sleepTextSecondary)
+                
+                // Compact stats
+                if let debt = session.sleepDebt, debt != 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: debt >= 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(debt >= 0 ? .sleepSuccess : .sleepError)
+                        Text(String(format: "%+.1f hrs", debt))
+                            .font(.caption)
+                            .foregroundColor(.sleepTextSecondary)
+                    }
+                }
             }
+            
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.sleepTextTertiary)
         }
         .padding()
         .sleepCard()
+    }
+    
+    private func qualityColor(_ quality: Double) -> Color {
+        switch quality {
+        case 80...100: return .sleepSuccess
+        case 60..<80: return .sleepPrimary
+        default: return .sleepWarning
+        }
     }
 }
 

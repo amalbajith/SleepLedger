@@ -1,38 +1,60 @@
+```
 //
 //  Theme.swift
 //  SleepLedger
 //
-//  Dark OLED-optimized color scheme and design tokens
+//  Apple Health inspired color scheme and styling
 //
 
 import SwiftUI
 
 extension Color {
-    // MARK: - Background Colors
-    static let sleepBackground = Color.black
-    static let sleepCardBackground = Color(hex: "#0A0A0A")
-    static let sleepCardBorder = Color(hex: "#1A1A1A")
+    // MARK: - Apple Health Inspired Colors
     
-    // MARK: - Primary Colors
-    static let sleepPrimary = Color(hex: "#6366F1") // Indigo
-    static let sleepSecondary = Color(hex: "#8B5CF6") // Purple
+    /// Pure black background for OLED
+    static let sleepBackground = Color(hex: "#000000")
     
-    // MARK: - Sleep Stage Colors
-    static let sleepDeepSleep = Color(hex: "#3B82F6") // Blue
-    static let sleepLightSleep = Color(hex: "#A78BFA") // Light purple
-    static let sleepAwake = Color(hex: "#F59E0B") // Amber
+    /// Card background (very dark gray)
+    static let sleepCardBackground = Color(hex: "#1C1C1E")
     
-    // MARK: - Status Colors
-    static let sleepSuccess = Color(hex: "#10B981") // Green
-    static let sleepWarning = Color(hex: "#F59E0B") // Amber
-    static let sleepError = Color(hex: "#EF4444") // Red
+    /// Card border (subtle gray)
+    static let sleepCardBorder = Color(hex: "#38383A")
     
-    // MARK: - Text Colors
-    static let sleepTextPrimary = Color.white.opacity(0.95)
-    static let sleepTextSecondary = Color.white.opacity(0.6)
-    static let sleepTextTertiary = Color.white.opacity(0.4)
+    /// Primary accent (Health app pink/coral)
+    static let sleepPrimary = Color(hex: "#FF2D55")
     
-    // MARK: - Helper
+    /// Secondary accent (Health app orange)
+    static let sleepSecondary = Color(hex: "#FF9500")
+    
+    /// Deep sleep indicator (Health app blue)
+    static let sleepDeepSleep = Color(hex: "#007AFF")
+    
+    /// Light sleep indicator (Health app purple)
+    static let sleepLightSleep = Color(hex: "#AF52DE")
+    
+    /// Awake indicator (Health app yellow)
+    static let sleepAwake = Color(hex: "#FFCC00")
+    
+    /// Success/positive (Health app green)
+    static let sleepSuccess = Color(hex: "#34C759")
+    
+    /// Warning (Health app orange)
+    static let sleepWarning = Color(hex: "#FF9500")
+    
+    /// Error/negative (Health app red)
+    static let sleepError = Color(hex: "#FF3B30")
+    
+    /// Primary text (white)
+    static let sleepTextPrimary = Color(hex: "#FFFFFF")
+    
+    /// Secondary text (light gray)
+    static let sleepTextSecondary = Color(hex: "#AEAEB2")
+    
+    /// Tertiary text (medium gray)
+    static let sleepTextTertiary = Color(hex: "#636366")
+    
+    // MARK: - Hex Color Initializer
+    
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -52,7 +74,7 @@ extension Color {
             .sRGB,
             red: Double(r) / 255,
             green: Double(g) / 255,
-            blue:  Double(b) / 255,
+            blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
     }
@@ -60,20 +82,15 @@ extension Color {
 
 // MARK: - Custom View Modifiers
 
-struct SleepCardModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
+extension View {
+    func sleepCard() -> some View {
+        self
             .background(Color.sleepCardBackground)
-            .cornerRadius(16)
+            .cornerRadius(12)
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.sleepCardBorder, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.sleepCardBorder, lineWidth: 0.5)
             )
     }
 }
-
-extension View {
-    func sleepCard() -> some View {
-        modifier(SleepCardModifier())
-    }
-}
+```
