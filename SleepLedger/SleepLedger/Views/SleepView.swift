@@ -60,7 +60,7 @@ struct SleepView: View {
                     
                     Spacer(minLength: 100)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
             }
             .scrollIndicators(.hidden)
         }
@@ -121,18 +121,10 @@ struct SleepView: View {
     // MARK: - Stats Summary
     
     private var statsSummaryRow: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                StatChip(label: "7-Day Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
-                StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)))
-                StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
-            }
-            
-            HStack(spacing: 8) {
-                StatChip(label: "Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)), compact: true)
-                StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)), compact: true)
-                StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess, compact: true)
-            }
+        HStack(spacing: 8) {
+            StatChip(label: "Average", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
+            StatChip(label: "Quality", value: String(format: "%.0f%%", trackingService.getAverageSleepQuality(days: 7)))
+            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
         }
     }
     
@@ -184,19 +176,24 @@ struct StatChip: View {
     var compact: Bool = false
     
     var body: some View {
-        VStack(spacing: compact ? 2 : 4) {
+        VStack(spacing: 2) {
             Text(label)
-                .font(.system(size: compact ? 8 : 10, weight: .medium))
+                .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.sleepTextTertiary)
                 .textCase(.uppercase)
                 .tracking(0.5)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             
             Text(value)
-                .font(.system(size: compact ? 14 : 16, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(valueColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, compact ? 12 : 16)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 4)
         .sleepGlassPanel()
     }
 }

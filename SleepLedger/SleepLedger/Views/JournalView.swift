@@ -184,7 +184,7 @@ struct JournalView: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
             
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 SummaryRing(
                     progress: min(averageSleepDuration / sleepGoalHours, 1.0),
                     label: "Duration",
