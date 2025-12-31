@@ -84,6 +84,17 @@ class SleepTrackingService: ObservableObject {
         // End the session
         session.endSession()
         
+        // Check minimum duration (30 minutes) - delete if too short
+        let minimumDurationMinutes: Double = 30.0
+        if let durationHours = session.durationInHours, durationHours < (minimumDurationMinutes / 60.0) {
+            print("⚠️ Session too short (< \(Int(minimumDurationMinutes)) min), deleting from history")
+            modelContext.delete(session)
+            try? modelContext.save()
+            currentSession = nil
+            cancelSmartAlarm()
+            return
+        }
+        
         // Save context
         try? modelContext.save()
         
