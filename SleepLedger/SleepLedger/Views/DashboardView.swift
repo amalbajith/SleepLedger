@@ -27,9 +27,6 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Header
-                    headerSection
-                    
                     // Main Punch In/Out Button
                     punchButton
                     
@@ -49,41 +46,12 @@ struct DashboardView: View {
             .background(Color.sleepBackground)
             .navigationTitle("SleepLedger")
             .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showingSmartAlarmSheet) {
-                smartAlarmSheet
-            }
             .onAppear {
                 // Reinitialize with proper context
                 let service = SleepTrackingService(modelContext: modelContext, motionService: motionService)
                 trackingService.defaultSleepGoalHours = 8.0
             }
         }
-    }
-    
-    // MARK: - Header Section
-    
-    private var headerSection: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.sleepPrimary, .sleepSecondary],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-            
-            Text(greetingMessage)
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.sleepTextPrimary)
-            
-            Text(currentDateString)
-                .font(.subheadline)
-                .foregroundColor(.sleepTextSecondary)
-        }
-        .padding(.top, 20)
     }
     
     // MARK: - Punch Button
