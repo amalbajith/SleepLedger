@@ -171,19 +171,19 @@ struct OnboardingView: View {
             }
             
             VStack(alignment: .leading, spacing: 20) {
-                FeatureRow(
+                OnboardingFeatureRow(
                     icon: "moon.zzz.fill",
                     title: "Monitors Sleep Stages",
                     description: "Tracks your movement to detect light and deep sleep"
                 )
                 
-                FeatureRow(
+                OnboardingFeatureRow(
                     icon: "clock.badge.checkmark.fill",
                     title: "30-Minute Window",
                     description: "Wakes you within 30 min before your target time"
                 )
                 
-                FeatureRow(
+                OnboardingFeatureRow(
                     icon: "sparkles",
                     title: "Wake Refreshed",
                     description: "Waking during light sleep feels more natural"
@@ -319,7 +319,7 @@ struct OnboardingView: View {
 
 // MARK: - Supporting Views
 
-struct FeatureRow: View {
+struct OnboardingFeatureRow: View {
     let icon: String
     let title: String
     let description: String
