@@ -14,61 +14,55 @@ struct SleepDebtRing: View {
     let isDeficit: Bool
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                let size = min(geometry.size.width, geometry.size.height)
+        ZStack {
+            // Background Track
+            Circle()
+                .stroke(Color.white.opacity(0.1), lineWidth: 20)
+            
+            // Progress Arc
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    isDeficit ? Color.sleepError : Color.sleepSuccess,
+                    style: StrokeStyle(lineWidth: 20, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .shadow(color: (isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.4), radius: 10)
+            
+            VStack(spacing: 4) {
+                Text(isDeficit ? "SLEEP DEBT" : "SLEEP SURPLUS")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.gray)
+                    .tracking(1)
                 
-                // Background Track
-                Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: size * 0.033)
-                
-                // Progress Arc
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(
-                        isDeficit ? Color.sleepError : Color.sleepSuccess,
-                        style: StrokeStyle(lineWidth: size * 0.033, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .shadow(color: (isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.4), radius: size * 0.03)
-                
-                VStack(spacing: size * 0.02) {
-                    Text(isDeficit ? "SLEEP DEBT" : "SLEEP SURPLUS")
-                        .font(.system(size: size * 0.045, weight: .bold))
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text("\(isDeficit ? "-" : "+")\(debtHours)")
+                        .font(.system(size: 48, weight: .light, design: .rounded))
+                    Text("h")
+                        .font(.system(size: 20, weight: .light))
                         .foregroundColor(.gray)
-                        .tracking(1)
                     
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("\(debtHours)")
-                            .font(.system(size: size * 0.2, weight: .thin, design: .rounded))
-                        Text("h")
-                            .font(.system(size: size * 0.1, weight: .light))
-                            .foregroundColor(.gray)
-                        
-                        Text(" \(debtMinutes)")
-                            .font(.system(size: size * 0.2, weight: .thin, design: .rounded))
-                        Text("m")
-                            .font(.system(size: size * 0.1, weight: .light))
-                            .foregroundColor(.gray)
-                    }
-                    .foregroundColor(.white)
-                    
-                    Text(isDeficit ? "Deficit" : "Surplus")
-                        .font(.system(size: size * 0.045, weight: .bold))
-                        .padding(.horizontal, size * 0.05)
-                        .padding(.vertical, size * 0.016)
-                        .background((isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.1))
-                        .foregroundColor(isDeficit ? .sleepError : .sleepSuccess)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke((isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.2), lineWidth: 1)
-                        )
+                    Text(" \(debtMinutes)")
+                        .font(.system(size: 48, weight: .light, design: .rounded))
+                    Text("m")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(.gray)
                 }
+                .foregroundColor(.white)
+                
+                Text(isDeficit ? "Deficit" : "Surplus")
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background((isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.1))
+                    .foregroundColor(isDeficit ? .sleepError : .sleepSuccess)
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke((isDeficit ? Color.sleepError : Color.sleepSuccess).opacity(0.2), lineWidth: 1)
+                    )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .aspectRatio(1, contentMode: .fit)
     }
 }
 
