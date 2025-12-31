@@ -19,12 +19,11 @@ struct SleepView: View {
             
             // 2. Main Content
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 16) { // Reduced spacing from 28
+                VStack(spacing: 20) { // Fixed spacing 20
                     // Header
                     headerSection
-                        .padding(.top, 4) // Reduced padding
                     
-                    // Logic: Derived Metrics (using @Query data for instant UI updates)
+                    // Logic: Derived Metrics
                     let completed = allSessions.filter { $0.endTime != nil }
                     let weekSessions = completed.filter { 
                         $0.startTime >= Calendar.current.date(byAdding: .day, value: -7, to: Date())! 
@@ -45,11 +44,10 @@ struct SleepView: View {
                         progress: debtProgress,
                         isDeficit: totalDebt < 0
                     )
-                    .frame(width: 180, height: 180) // Shrunk from 220
-                    .padding(.vertical, 0)
+                    .frame(width: 200, height: 200) // Fixed 200x200
                     
                     // Mid Section: Quick Stats (3-column layout)
-                    HStack(spacing: 8) { // Tighter spacing
+                    HStack(spacing: 12) {
                         StatChip(label: "Average", value: formatDuration(avgDuration))
                         StatChip(label: "Quality", value: String(format: "%.0f%%", avgQuality))
                         StatChip(label: "Balance", value: totalDebt >= 0 ? "Surplus" : "Deficit", valueColor: totalDebt >= 0 ? .sleepSuccess : .sleepError)
@@ -59,31 +57,30 @@ struct SleepView: View {
                     PulseButton(isTracking: trackingService.isTracking) {
                         handlePunchAction()
                     }
-                    .scaleEffect(0.9) // Slightly smaller button
                     .padding(.vertical, 4)
                     
                     // Footer: Last Night Summary
                     if let lastSession = completed.first {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text("RECENT HISTORY")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.sleepTextTertiary)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white.opacity(0.6))
                                 .tracking(1)
                                 .padding(.leading, 4)
                             
                             TactileTimeCard(lastSession: lastSession)
-                                .scaleEffect(0.95) // Fit card better
                         }
                     }
                     
-                    Spacer(minLength: 120) // More bottom space for tab bar
+                    Spacer()
                 }
-                .padding(.horizontal, 16) // Tighter margins
-                .padding(.top, 16)
+                .padding(.top, 60)       // Exact padding requested
+                .padding(.horizontal, 24)
+                .padding(.bottom, 100)
             }
         }
         .background(Color.sleepBackground)
-        .ignoresSafeArea(.container, edges: .bottom)
+        .ignoresSafeArea(.container, edges: .bottom) // Only bottom ignored
     }
     
     // MARK: - Components
@@ -107,19 +104,17 @@ struct SleepView: View {
     
     private var headerSection: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) { // Tighter spacing
+            VStack(alignment: .leading, spacing: 4) {
                 Text(Date().formatted(.dateTime.weekday(.wide).month().day()))
-                    .font(.system(size: 11, weight: .semibold)) // Smaller font
-                    .foregroundColor(.sleepTextSecondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
                     .textCase(.uppercase)
                     .tracking(1.0)
                 
                 Text(greeting)
-                    .font(.system(size: 28, weight: .light)) // Reduced from 32
+                    .font(.system(size: 34, weight: .light))
                     .foregroundColor(.white)
-                    .minimumScaleFactor(0.8) // Allow shrinking
             }
-            .padding(.leading, 8)
             
             Spacer()
             
@@ -127,11 +122,10 @@ struct SleepView: View {
                 // Settings action
             } label: {
                 Image(systemName: "bell.badge")
-                    .font(.system(size: 16))
+                    .font(.system(size: 18))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40) // Smaller button
-                    .background(Circle().fill(Color.white.opacity(0.05)))
-                    .overlay(Circle().stroke(Color.white.opacity(0.1), lineWidth: 1))
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.white.opacity(0.1)))
             }
         }
     }
@@ -185,30 +179,30 @@ struct StatChip: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(label)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.sleepTextTertiary)
+                .font(.system(size: 11, weight: .medium)) // Fixed size 11
+                .foregroundColor(.white.opacity(0.8))      // Visible text
                 .textCase(.uppercase)
                 .tracking(0.5)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             
             Text(value)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 24, weight: .semibold)) // Fixed size 24
                 .foregroundColor(valueColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 68)
+        .frame(height: 72) // Fixed height 72
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20) // Corner radius 20
                 .fill(.ultraThinMaterial.opacity(0.3))
                 .background(Color.sleepGlassBackground)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.sleepGlassBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
     }
 }
