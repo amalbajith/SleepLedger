@@ -2,15 +2,16 @@
 
 A privacy-focused sleep tracker for iOS that uses a manual "Punch In/Out" system with accelerometer-based movement tracking.
 
-## Features
+## ✨ Features
 
 - 🛏️ **Manual Sleep Tracking** - Simple punch in/out system (no Apple Watch required)
-- 📊 **Movement Detection** - CoreMotion-based accelerometer tracking
-- 💤 **Sleep Stage Classification** - Automatic detection of deep sleep, light sleep, and awake states
-- 📉 **Sleep Debt Tracking** - Monitor your sleep deficit/surplus against your goal
-- ⏰ **Smart Alarm** - Wake up during light sleep within a 20-minute window
+- 📊 **Movement Detection** - CoreMotion-based accelerometer tracking with 50 Hz sampling
+- 💤 **Sleep Stage Classification** - Real-time detection of deep sleep, light sleep, and awake states
+- 📉 **Sleep Debt Tracking** - Monitor your sleep deficit/surplus against your customizable goal
+- ⏰ **Smart Alarm** - Wake up during light sleep within a 20-minute window before your target time
+- 📈 **Statistics & Charts** - Visualize sleep duration, quality trends, and debt accumulation
+- 📱 **Dark OLED UI** - Battery-optimized pure black interface with gradient accents
 - 🔐 **100% Private** - All data stored locally with SwiftData (no cloud, no subscription)
-- 🌙 **Dark OLED UI** - Battery-optimized pure black interface
 
 ## Requirements
 
