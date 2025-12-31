@@ -19,50 +19,56 @@ struct SleepView: View {
         _trackingService = StateObject(wrappedValue: SleepTrackingService(modelContext: context))
     }
     
-    var body: some View {
-        ZStack {
-            // Abstract Background Ambience
-            backgroundAmbience
-            
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Header
-                    headerSection
-                        .padding(.top, 40)
-                    
-                    // Sleep Debt Ring
-                    let totalDebt = trackingService.getCumulativeSleepDebt(days: 7)
-                    let hours = Int(abs(totalDebt))
-                    let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
-                    let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
-                    
-                    SleepDebtRing(
-                        debtHours: hours,
-                        debtMinutes: minutes,
-                        progress: progress,
-                        isDeficit: totalDebt < 0
-                    )
-                    .padding(.vertical, 20)
-                    
-                    // Stats Row
-                    statsSummaryRow
-                    
-                    // Main Action Button
-                    PulseButton(isTracking: trackingService.isTracking) {
-                        handlePunchAction()
+        GeometryReader { outerGeometry in
+            ZStack {
+                // Abstract Background Ambience
+                backgroundAmbience
+                
+                ScrollView {
+                    VStack(spacing: outerGeometry.size.height * 0.03) {
+                        // Header
+                        headerSection
+                            .padding(.top, 20)
+                        
+                        // Sleep Debt Ring
+                        let totalDebt = trackingService.getCumulativeSleepDebt(days: 7)
+                        let hours = Int(abs(totalDebt))
+                        let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
+                        let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
+                        
+                        let ringSize = min(outerGeometry.size.width * 0.6, outerGeometry.size.height * 0.28)
+                        
+                        SleepDebtRing(
+                            debtHours: hours,
+                            debtMinutes: minutes,
+                            progress: progress,
+                            isDeficit: totalDebt < 0
+                        )
+                        .frame(width: ringSize, height: ringSize)
+                        .padding(.vertical, 10)
+                        
+                        // Stats Row
+                        statsSummaryRow
+                        
+                        // Main Action Button
+                        PulseButton(isTracking: trackingService.isTracking) {
+                            handlePunchAction()
+                        }
+                        .scaleEffect(outerGeometry.size.height < 700 ? 0.85 : 1.0)
+                        .padding(.vertical, 5)
+                        
+                        // Recent Session Card
+                        if let lastSession = allSessions.filter({ $0.endTime != nil }).first {
+                            TactileTimeCard(lastSession: lastSession)
+                                .scaleEffect(outerGeometry.size.height < 700 ? 0.9 : 1.0)
+                        }
+                        
+                        Spacer(minLength: 120)
                     }
-                    .padding(.vertical, 10)
-                    
-                    // Recent Session Card
-                    if let lastSession = allSessions.filter({ $0.endTime != nil }).first {
-                        TactileTimeCard(lastSession: lastSession)
-                    }
-                    
-                    Spacer(minLength: 100)
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal, 20)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
         .background(Color.sleepBackground)
         .ignoresSafeArea(.all, edges: .top)

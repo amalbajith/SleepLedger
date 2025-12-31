@@ -68,7 +68,6 @@ struct SleepDebtRing: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 240, height: 240) // Limit card container size
         .aspectRatio(1, contentMode: .fit)
     }
 }
