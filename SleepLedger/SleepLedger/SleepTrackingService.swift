@@ -174,6 +174,47 @@ class SleepTrackingService: ObservableObject {
         }
     }
     
+    /// Calculate sleep consistency score (0-100%) based on variance in start times
+    func calculateSleepConsistency(days: Int = 7) -> Int {
+        let calendar = Calendar.current
+        let startDate = calendar.date(byAdding: .day, value: -days, to: Date())!
+        
+        let descriptor = FetchDescriptor<SleepSession>(
+            predicate: #Predicate { session in
+                session.startTime >= startDate && session.endTime != nil
+            }
+        )
+        
+        do {
+            let sessions = try modelContext.fetch(descriptor)
+            guard sessions.count >= 2 else { return 100 } // Default to 100 if not enough data
+            
+            // Convert start times to minutes from midnight (adjusted for late night)
+            let startTimes = sessions.map { session -> Double in
+                let components = calendar.dateComponents([.hour, .minute], from: session.startTime)
+                let minutes = Double(components.hour! * 60 + components.minute!)
+                // If time is before noon (e.g. 1 AM), treat it as next day (add 24h) roughly for variance calc logic
+                return minutes < 1080 ? minutes + 1440 : minutes
+            }
+            
+            let meanStart = startTimes.reduce(0, +) / Double(startTimes.count)
+            let varianceStart = startTimes.map { pow($0 - meanStart, 2) }.reduce(0, +) / Double(startTimes.count)
+            let stdDevStart = sqrt(varianceStart) // In minutes
+            
+            // Score Calculation:
+            // 0-30 min deviation = 100%
+            // Every 15 mins extra deviation reduces score by 5%
+            let excessVariance = max(0, stdDevStart - 30)
+            let penalty = (excessVariance / 15.0) * 5.0
+            
+            return Int(max(0, 100 - penalty))
+            
+        } catch {
+            print("❌ Error calculating consistency: \(error)")
+            return 100
+        }
+    }
+    
     // MARK: - Private Methods
     
     /// Handle incoming movement data from motion service

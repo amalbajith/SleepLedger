@@ -252,31 +252,14 @@ final class MovementData {
     /// Duration this measurement represents (in minutes)
     var durationMinutes: Double
     
-    /// Raw accelerometer data (x, y, z)
-    var accelerometerX: Double
-    var accelerometerY: Double
-    var accelerometerZ: Double
-    
-    /// Calculated magnitude of movement
-    var magnitude: Double
-    
     init(
         timestamp: Date = Date(),
         movementIntensity: Double,
-        durationMinutes: Double = 1.0,
-        accelerometerX: Double = 0,
-        accelerometerY: Double = 0,
-        accelerometerZ: Double = 0
+        durationMinutes: Double = 1.0
     ) {
         self.id = UUID()
         self.timestamp = timestamp
         self.movementIntensity = movementIntensity
         self.durationMinutes = durationMinutes
-        self.accelerometerX = accelerometerX
-        self.accelerometerY = accelerometerY
-        self.accelerometerZ = accelerometerZ
-        self.magnitude = sqrt(accelerometerX * accelerometerX +
-                            accelerometerY * accelerometerY +
-                            accelerometerZ * accelerometerZ)
     }
 }

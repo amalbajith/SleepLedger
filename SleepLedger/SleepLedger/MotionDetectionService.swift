@@ -152,10 +152,7 @@ class MotionDetectionService: ObservableObject {
         let movementData = MovementData(
             timestamp: Date(),
             movementIntensity: intensity,
-            durationMinutes: analysisWindowSize / 60.0,
-            accelerometerX: accelerometerBuffer.last?.x ?? 0,
-            accelerometerY: accelerometerBuffer.last?.y ?? 0,
-            accelerometerZ: accelerometerBuffer.last?.z ?? 0
+            durationMinutes: analysisWindowSize / 60.0
         )
         
         // Notify callback
