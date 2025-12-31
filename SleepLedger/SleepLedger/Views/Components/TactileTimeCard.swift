@@ -69,7 +69,7 @@ private struct TimeRow: View {
                 
                 // Ruler Ticks Pattern
                 HStack(spacing: 12) {
-                    ForEach(0..<20) { i in
+                    ForEach(0..<15) { i in
                         Rectangle()
                             .fill(Color.white.opacity(0.1))
                             .frame(width: 1, height: i % 5 == 0 ? 20 : 10)

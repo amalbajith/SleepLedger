@@ -121,10 +121,18 @@ struct SleepView: View {
     // MARK: - Stats Summary
     
     private var statsSummaryRow: some View {
-        HStack(spacing: 12) {
-            StatChip(label: "7-Day Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
-            StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)))
-            StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                StatChip(label: "7-Day Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)))
+                StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)))
+                StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess)
+            }
+            
+            HStack(spacing: 8) {
+                StatChip(label: "Avg", value: formatDuration(trackingService.getAverageSleepDuration(days: 7)), compact: true)
+                StatChip(label: "Quality", value: String(format: "%.0f", trackingService.getAverageSleepQuality(days: 7)), compact: true)
+                StatChip(label: "Consistency", value: "92%", valueColor: .sleepSuccess, compact: true)
+            }
         }
     }
     
@@ -173,21 +181,22 @@ struct StatChip: View {
     let label: String
     let value: String
     var valueColor: Color = .white
+    var compact: Bool = false
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: compact ? 2 : 4) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: compact ? 8 : 10, weight: .medium))
                 .foregroundColor(.sleepTextTertiary)
                 .textCase(.uppercase)
                 .tracking(0.5)
             
             Text(value)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: compact ? 14 : 16, weight: .semibold))
                 .foregroundColor(valueColor)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, compact ? 12 : 16)
         .sleepGlassPanel()
     }
 }

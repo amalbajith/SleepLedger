@@ -15,37 +15,42 @@ struct SummaryRing: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.05), lineWidth: 6)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 5)
                 
                 Circle()
                     .trim(from: 0, to: progress)
                     .stroke(
                         color,
-                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .shadow(color: color.opacity(0.4), radius: 4)
+                    .shadow(color: color.opacity(0.4), radius: 3)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 14))
                     .foregroundColor(color)
             }
-            .frame(width: 80, height: 80)
+            .frame(width: 50, height: 50)
             
-            VStack(spacing: 2) {
+            VStack(spacing: 1) {
                 Text(label)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
                 Text(sublabel)
-                    .font(.system(size: 10))
+                    .font(.system(size: 9))
                     .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 4)
         .frame(maxWidth: .infinity)
         .background(Color.sleepCardBackground)
         .cornerRadius(16)

@@ -75,6 +75,8 @@ struct OnboardingView: View {
                 Text("SleepLedger")
                     .font(.system(size: 48, weight: .bold))
                     .foregroundColor(.sleepTextPrimary)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
                 
                 Text("Track your sleep with precision\nand wake up refreshed")
                     .font(.subheadline)
@@ -288,6 +290,8 @@ struct OnboardingView: View {
                 Text("All Set!")
                     .font(.system(size: 48, weight: .bold))
                     .foregroundColor(.sleepTextPrimary)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
                 
                 Text("You're ready to start tracking your sleep")
                     .font(.subheadline)

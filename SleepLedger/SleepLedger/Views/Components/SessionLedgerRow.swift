@@ -44,8 +44,10 @@ struct SessionLedgerRow: View {
                 }
                 
                 Text("\(session.startTime.formatted(date: .omitted, time: .shortened)) - \(session.endTime?.formatted(date: .omitted, time: .shortened) ?? "--:--")")
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             
             Spacer()

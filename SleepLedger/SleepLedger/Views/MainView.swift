@@ -55,7 +55,7 @@ struct MainView: View {
         }
         .padding(.horizontal, 8)
         .frame(height: 64)
-        .frame(maxWidth: 320)
+        .frame(maxWidth: 300)
         .sleepGlassPanel()
         .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
     }
