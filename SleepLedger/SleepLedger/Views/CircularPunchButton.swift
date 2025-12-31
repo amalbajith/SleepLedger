@@ -78,9 +78,19 @@ struct CircularPunchButton: View {
     // MARK: - Alarm Setup View (Before Punch In)
     
     private var alarmSetupView: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             // Header
             VStack(spacing: 8) {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.sleepPrimary, .sleepSecondary],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
                 Text("Set Your Wake Time")
                     .font(.title2)
                     .fontWeight(.semibold)
@@ -92,55 +102,106 @@ struct CircularPunchButton: View {
                     .multilineTextAlignment(.center)
             }
             
-            // Circular clock picker
-            CircularClockPicker(selectedTime: $wakeTime)
-            
-            // Smart alarm toggle
-            HStack {
-                Image(systemName: "brain.head.profile")
-                    .foregroundColor(.sleepPrimary)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Smart Alarm")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.sleepTextPrimary)
+            // Time Picker Card
+            VStack(spacing: 16) {
+                // Smart Alarm Toggle
+                HStack {
+                    Image(systemName: smartAlarmEnabled ? "brain.head.profile.fill" : "brain.head.profile")
+                        .foregroundColor(.sleepPrimary)
+                        .font(.title3)
                     
-                    Text("Wake during light sleep (30 min window)")
-                        .font(.caption)
-                        .foregroundColor(.sleepTextSecondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Smart Alarm")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.sleepTextPrimary)
+                        
+                        Text("30 min window before wake time")
+                            .font(.caption)
+                            .foregroundColor(.sleepTextSecondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $smartAlarmEnabled)
+                        .labelsHidden()
+                        .tint(.sleepPrimary)
                 }
                 
-                Spacer()
-                
-                Toggle("", isOn: $smartAlarmEnabled)
-                    .labelsHidden()
-                    .tint(.sleepPrimary)
+                if smartAlarmEnabled {
+                    Divider()
+                        .background(Color.sleepCardBorder)
+                    
+                    // Time Picker
+                    VStack(spacing: 12) {
+                        HStack {
+                            Image(systemName: "alarm.fill")
+                                .foregroundColor(.sleepSecondary)
+                            Text("Wake Time")
+                                .font(.subheadline)
+                                .foregroundColor(.sleepTextPrimary)
+                            Spacer()
+                        }
+                        
+                        DatePicker(
+                            "",
+                            selection: $wakeTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .datePickerStyle(.wheel)
+                        .labelsHidden()
+                        .colorScheme(.dark)
+                        .tint(.sleepPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                }
             }
             .padding()
             .sleepCard()
             
-            // Punch In Button
+            // Large Circular Punch In Button
             Button(action: handlePunchIn) {
-                HStack(spacing: 12) {
-                    Image(systemName: "moon.stars.fill")
-                        .font(.title2)
+                ZStack {
+                    // Outer glow ring
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [.sleepPrimary.opacity(0.3), .clear],
+                                center: .center,
+                                startRadius: 90,
+                                endRadius: 130
+                            )
+                        )
+                        .frame(width: 260, height: 260)
                     
-                    Text("Start Sleep Tracking")
-                        .font(.headline)
+                    // Main button
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.sleepPrimary, .sleepSecondary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 180, height: 180)
+                        .shadow(color: .sleepPrimary.opacity(0.5), radius: 20, x: 0, y: 10)
+                    
+                    VStack(spacing: 12) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                        
+                        Text("Punch In")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("Start Tracking")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .background(
-                    LinearGradient(
-                        colors: [.sleepPrimary, .sleepSecondary],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(16)
-                .shadow(color: .sleepPrimary.opacity(0.5), radius: 15, x: 0, y: 8)
             }
             .scaleEffect(isPressing ? 0.95 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressing)
