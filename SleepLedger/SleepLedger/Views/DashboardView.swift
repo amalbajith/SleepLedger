@@ -47,8 +47,7 @@ struct DashboardView: View {
             .navigationTitle("SleepLedger")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                // Reinitialize with proper context
-                let service = SleepTrackingService(modelContext: modelContext, motionService: motionService)
+                // Set default sleep goal
                 trackingService.defaultSleepGoalHours = 8.0
             }
         }

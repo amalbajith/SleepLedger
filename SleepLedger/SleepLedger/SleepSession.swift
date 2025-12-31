@@ -131,7 +131,7 @@ final class SleepSession {
         var totalMovement: Double = 0
         
         // Analyze movement data to determine sleep stages
-        for (index, data) in movementData.enumerated() {
+        for data in movementData {
             totalMovement += data.movementIntensity
             
             // Deep sleep: very low movement (< 0.3)

@@ -1,4 +1,3 @@
-```
 //
 //  Theme.swift
 //  SleepLedger
@@ -93,4 +92,3 @@ extension View {
             )
     }
 }
-```
