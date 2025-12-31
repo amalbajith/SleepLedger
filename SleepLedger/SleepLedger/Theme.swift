@@ -2,7 +2,7 @@
 //  Theme.swift
 //  SleepLedger
 //
-//  Pure black & white monochrome color scheme
+//  Pure black & white monochrome with proper contrast
 //
 
 import SwiftUI
@@ -13,23 +13,23 @@ extension Color {
     /// Pure black background
     static let sleepBackground = Color(hex: "#000000")
     
-    /// Card background (very dark gray)
-    static let sleepCardBackground = Color(hex: "#1A1A1A")
+    /// Card background (dark gray)
+    static let sleepCardBackground = Color(hex: "#1C1C1E")
     
-    /// Card border (subtle gray)
-    static let sleepCardBorder = Color(hex: "#2A2A2A")
+    /// Card border (medium gray)
+    static let sleepCardBorder = Color(hex: "#3A3A3C")
     
     /// Primary accent (white)
     static let sleepPrimary = Color(hex: "#FFFFFF")
     
     /// Secondary accent (light gray)
-    static let sleepSecondary = Color(hex: "#E0E0E0")
+    static let sleepSecondary = Color(hex: "#D1D1D6")
     
-    /// Deep sleep indicator (medium gray)
-    static let sleepDeepSleep = Color(hex: "#A0A0A0")
+    /// Deep sleep indicator (medium-light gray)
+    static let sleepDeepSleep = Color(hex: "#AEAEB2")
     
     /// Light sleep indicator (light gray)
-    static let sleepLightSleep = Color(hex: "#C0C0C0")
+    static let sleepLightSleep = Color(hex: "#D1D1D6")
     
     /// Awake indicator (white)
     static let sleepAwake = Color(hex: "#FFFFFF")
@@ -37,20 +37,20 @@ extension Color {
     /// Success/positive (white)
     static let sleepSuccess = Color(hex: "#FFFFFF")
     
-    /// Warning (light gray)
-    static let sleepWarning = Color(hex: "#B0B0B0")
+    /// Warning (medium-light gray)
+    static let sleepWarning = Color(hex: "#AEAEB2")
     
     /// Error/negative (medium gray)
-    static let sleepError = Color(hex: "#808080")
+    static let sleepError = Color(hex: "#8E8E93")
     
-    /// Primary text (white)
+    /// Primary text (white) - high contrast
     static let sleepTextPrimary = Color(hex: "#FFFFFF")
     
-    /// Secondary text (light gray)
-    static let sleepTextSecondary = Color(hex: "#A0A0A0")
+    /// Secondary text (light gray) - medium contrast
+    static let sleepTextSecondary = Color(hex: "#AEAEB2")
     
-    /// Tertiary text (dark gray)
-    static let sleepTextTertiary = Color(hex: "#505050")
+    /// Tertiary text (medium gray) - low contrast
+    static let sleepTextTertiary = Color(hex: "#636366")
     
     // MARK: - Hex Color Initializer
     
