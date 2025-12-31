@@ -30,10 +30,17 @@ struct SleepView: View {
                     headerSection
                         .padding(.top, 40)
                     
-                    // Ring Gauge
-                    RingGauge(
-                        debtHours: trackingService.getCumulativeSleepDebt(days: 7),
-                        goalHours: sleepGoalHours * 7
+                    // Sleep Debt Ring
+                    let totalDebt = trackingService.getCumulativeSleepDebt(days: 7)
+                    let hours = Int(abs(totalDebt))
+                    let minutes = Int((abs(totalDebt) - Double(hours)) * 60)
+                    let progress = min(abs(totalDebt) / (sleepGoalHours * 7), 1.0)
+                    
+                    SleepDebtRing(
+                        debtHours: hours,
+                        debtMinutes: minutes,
+                        progress: progress,
+                        isDeficit: totalDebt < 0
                     )
                     .padding(.vertical, 20)
                     
