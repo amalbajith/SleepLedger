@@ -329,7 +329,7 @@ struct DataPrivacyView: View {
                 )
                 
                 Divider()
-                    .background(Color.sleepCardBorder)
+                    .background(Color.sleepGlassBorder)
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Permissions Used")
@@ -516,7 +516,7 @@ struct AboutView: View {
                             .multilineTextAlignment(.center)
                         
                         Divider()
-                            .background(Color.sleepCardBorder)
+                            .background(Color.sleepGlassBorder)
                         
                         FeatureRow(icon: "hand.tap.fill", text: "Manual punch in/out system")
                         FeatureRow(icon: "waveform.path.ecg", text: "Accelerometer-based tracking")
