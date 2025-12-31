@@ -214,7 +214,7 @@ struct SessionDetailView: View {
                         .trim(from: 0, to: quality / 100)
                         .stroke(
                             LinearGradient(
-                                colors: [.sleepPrimary, .sleepSecondary],
+                                colors: [.sleepPrimary, .sleepPrimaryGlow],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -222,6 +222,7 @@ struct SessionDetailView: View {
                         )
                         .frame(width: 150, height: 150)
                         .rotationEffect(.degrees(-90))
+                        .shadow(color: .sleepPrimary.opacity(0.3), radius: 10)
                     
                     VStack(spacing: 4) {
                         Text(String(format: "%.0f", quality))
@@ -263,7 +264,7 @@ struct SessionDetailView: View {
                     icon: "sunrise.fill",
                     label: "Wake Time",
                     value: endTime.formatted(date: .abbreviated, time: .shortened),
-                    color: .sleepSecondary
+                    color: .sleepPrimaryGlow
                 )
             }
             

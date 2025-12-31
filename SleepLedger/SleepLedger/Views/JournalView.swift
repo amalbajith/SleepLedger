@@ -11,157 +11,233 @@ import SwiftData
 struct JournalView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SleepSession.startTime, order: .reverse) private var sessions: [SleepSession]
+    @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
     
     @State private var selectedPeriod: TimePeriod = .week
     @State private var selectedSession: SleepSession?
     @State private var showingClearAlert = false
     
     enum TimePeriod: String, CaseIterable {
-        case week = "7 Days"
-        case month = "30 Days"
-        case threeMonths = "90 Days"
+        case week = "This Week"
+        case month = "Last 30 Days"
+        case all = "All Time"
         
         var days: Int {
             switch self {
             case .week: return 7
             case .month: return 30
-            case .threeMonths: return 90
+            case .all: return 3650
             }
         }
     }
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Period Selector
-                    periodSelector
-                    
-                    // Stats Overview
-                    statsOverview
-                    
-                    // Sleep Trend Chart
-                    sleepTrendSection
-                    
-                    // All Sessions List
-                    sessionsListSection
+        ZStack {
+            Color.sleepBackground.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                headerView
+                
+                ScrollView {
+                    VStack(spacing: 32) {
+                        // Trends Section
+                        trendsSection
+                        
+                        // Summary Section (Rings)
+                        summarySection
+                        
+                        // Ledger Section (List)
+                        ledgerSection
+                        
+                        Spacer(minLength: 120) // Extra padding for tab bar
+                    }
+                    .padding(24)
                 }
-                .padding()
+                .scrollIndicators(.hidden)
             }
-            .background(Color.sleepBackground)
-            .navigationTitle("Journal")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingClearAlert = true }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.sleepTextSecondary)
+        }
+        .fullScreenCover(item: $selectedSession) { session in
+            SessionDetailView(session: session)
+        }
+        .alert("Clear All History?", isPresented: $showingClearAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) {
+                clearAllHistory()
+            }
+        } message: {
+            Text("This will permanently delete all your sleep records. This cannot be undone.")
+        }
+    }
+    
+    // MARK: - Header
+    
+    private var headerView: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Spacer()
+                Text("History")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                
+                Button {
+                    showingClearAlert = true
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 18))
+                        .foregroundColor(.sleepPrimary)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            
+            // Period Filters
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(TimePeriod.allCases, id: \.self) { period in
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedPeriod = period
+                            }
+                        } label: {
+                            Text(period.rawValue)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(selectedPeriod == period ? .white : .gray)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(selectedPeriod == period ? Color.sleepPrimary : Color(white: 0.1))
+                                .cornerRadius(20)
+                                .shadow(color: selectedPeriod == period ? Color.sleepPrimary.opacity(0.3) : .clear, radius: 10)
+                        }
                     }
                 }
+                .padding(.horizontal, 24)
             }
-            .alert("Clear All History?", isPresented: $showingClearAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear", role: .destructive) {
-                    clearAllHistory()
-                }
-            } message: {
-                Text("This will permanently delete all your sleep records. This cannot be undone.")
-            }
-            .sheet(item: $selectedSession) { session in
-                SessionDetailView(session: session)
-            }
-        }
-    }
-    
-    // MARK: - Period Selector
-    
-    private var periodSelector: some View {
-        HStack(spacing: 12) {
-            ForEach(TimePeriod.allCases, id: \.self) { period in
-                Button(action: { selectedPeriod = period }) {
-                    Text(period.rawValue)
-                        .font(.system(size: 13, weight: selectedPeriod == period ? .bold : .medium))
-                        .foregroundColor(selectedPeriod == period ? .white : .sleepTextSecondary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(selectedPeriod == period ? Color.sleepPrimary.opacity(0.2) : Color.white.opacity(0.05))
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(selectedPeriod == period ? Color.sleepPrimary.opacity(0.5) : Color.white.opacity(0.05), lineWidth: 1)
-                        )
-                }
-            }
-        }
-    }
-    
-    // MARK: - Stats Overview
-    
-    private var statsOverview: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 16) {
-                StatCard(
-                    icon: "moon.fill",
-                    label: "Average",
-                    value: String(format: "%.1fh", averageSleepDuration),
-                    color: .sleepPrimary
-                )
-                
-                StatCard(
-                    icon: "star.fill",
-                    label: "Quality",
-                    value: String(format: "%.0f%%", averageQuality),
-                    color: .sleepSecondary
-                )
-            }
+            .padding(.bottom, 16)
             
-            HStack(spacing: 16) {
-                StatCard(
-                    icon: "chart.line.downtrend.xyaxis",
-                    label: "Balance",
-                    value: String(format: "%+.1fh", totalSleepDebt),
-                    color: totalSleepDebt >= 0 ? .sleepSuccess : .sleepError
-                )
-                
-                StatCard(
-                    icon: "calendar",
-                    label: "Nights",
-                    value: "\(filteredSessions.count)",
-                    color: .sleepPrimary
-                )
-            }
+            Divider()
+                .background(Color.white.opacity(0.05))
         }
+        .background(Color.sleepBackground.opacity(0.8).blur(radius: 10))
     }
     
-    // MARK: - Sleep Trend Section
+    // MARK: - Trends
     
-    private var sleepTrendSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Sleep Pattern")
-                .font(.headline)
-                .foregroundColor(.sleepTextPrimary)
-            
-            SimpleTrendChart(sessions: filteredSessions)
-                .frame(height: 120)
-        }
-        .padding()
-        .sleepCard()
-    }
-    
-    // MARK: - Sessions List Section
-    
-    private var sessionsListSection: some View {
+    private var trendsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("All Nights")
-                .font(.headline)
-                .foregroundColor(.sleepTextPrimary)
+            HStack(alignment: .bottom) {
+                Text("Trends")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Text("Avg Sleep")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.gray)
+                    .textCase(.uppercase)
+                    .tracking(1)
+            }
             
-            if filteredSessions.isEmpty {
-                emptyState
-            } else {
-                LazyVStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Average Duration")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    HStack(spacing: 8) {
+                        Text(formatDuration(averageSleepDuration))
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        // Trend Indicator
+                        HStack(spacing: 2) {
+                            Image(systemName: "trending.up")
+                                .font(.system(size: 12))
+                            Text("15%")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(Color(hex: "#0bda6f"))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(hex: "#0bda6f").opacity(0.1))
+                        .cornerRadius(6)
+                    }
+                }
+                
+                HistoryTrendsChart(sessions: filteredSessions)
+            }
+            .padding(20)
+            .background(Color.sleepCardBackground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
+        }
+    }
+    
+    // MARK: - Summary
+    
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Summary")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
+            
+            HStack(spacing: 12) {
+                SummaryRing(
+                    progress: min(averageSleepDuration / sleepGoalHours, 1.0),
+                    label: "Duration",
+                    sublabel: "\(Int(min(averageSleepDuration / sleepGoalHours, 1.0) * 100))% Goal",
+                    icon: "clock.fill",
+                    color: .sleepPrimary
+                )
+                
+                SummaryRing(
+                    progress: averageQuality / 100.0,
+                    label: "Quality",
+                    sublabel: "\(Int(averageQuality))% Avg",
+                    icon: "star.fill",
+                    color: Color(hex: "#7c3aed")
+                )
+                
+                SummaryRing(
+                    progress: 0.25, // Concept filler
+                    label: "Deep",
+                    sublabel: "1h 45m",
+                    icon: "waveform.path.ecg",
+                    color: Color(hex: "#06b6d4")
+                )
+            }
+        }
+    }
+    
+    // MARK: - Ledger
+    
+    private var ledgerSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .bottom) {
+                Text("Ledger")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button("Export CSV") {
+                    // Export functionality
+                }
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.sleepPrimary)
+                .textCase(.uppercase)
+            }
+            
+            VStack(spacing: 12) {
+                if filteredSessions.isEmpty {
+                    Text("No records found for this period.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .padding(.vertical, 40)
+                } else {
                     ForEach(filteredSessions) { session in
-                        SessionCard(session: session)
+                        SessionLedgerRow(session: session)
                             .onTapGesture {
                                 selectedSession = session
                             }
@@ -171,21 +247,7 @@ struct JournalView: View {
         }
     }
     
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "moon.zzz")
-                .font(.system(size: 60))
-                .foregroundColor(.sleepTextTertiary)
-            
-            Text("No sleep tracked yet")
-                .font(.subheadline)
-                .foregroundColor(.sleepTextSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-    }
-    
-    // MARK: - Computed Properties
+    // MARK: - Helpers & Data
     
     private var filteredSessions: [SleepSession] {
         let calendar = Calendar.current
@@ -207,11 +269,11 @@ struct JournalView: View {
         return total / Double(filteredSessions.count)
     }
     
-    private var totalSleepDebt: Double {
-        filteredSessions.compactMap { $0.sleepDebt }.reduce(0, +)
+    private func formatDuration(_ hours: Double) -> String {
+        let h = Int(hours)
+        let m = Int((hours - Double(h)) * 60)
+        return "\(h)h \(m)m"
     }
-    
-    // MARK: - Actions
     
     private func clearAllHistory() {
         for session in sessions {
@@ -221,78 +283,8 @@ struct JournalView: View {
     }
 }
 
-// MARK: - Stat Card
-
-struct StatCard: View {
-    let icon: String
-    let label: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.sleepTextPrimary)
-            
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.sleepTextSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .sleepCard()
-    }
-}
-
-// MARK: - Simple Trend Chart
-
-struct SimpleTrendChart: View {
-    let sessions: [SleepSession]
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                // Background grid
-                VStack(spacing: 0) {
-                    ForEach(0..<4) { _ in
-                        Divider()
-                            .background(Color.sleepCardBorder)
-                        Spacer()
-                    }
-                }
-                
-                // Bars
-                if !sessions.isEmpty {
-                    HStack(alignment: .bottom, spacing: 4) {
-                        ForEach(sessions.reversed()) { session in
-                            if let hours = session.durationInHours {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(barColor(hours: hours))
-                                    .frame(height: geometry.size.height * min(hours / 12.0, 1.0))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    private func barColor(hours: Double) -> Color {
-        switch hours {
-        case 7...9: return .sleepSuccess
-        case 5..<7, 9..<11: return .sleepPrimary
-        default: return .sleepWarning
-        }
-    }
-}
-
 #Preview {
     JournalView()
         .preferredColorScheme(.dark)
 }
+
