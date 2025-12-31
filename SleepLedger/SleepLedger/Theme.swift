@@ -2,13 +2,13 @@
 //  Theme.swift
 //  SleepLedger
 //
-//  Apple Health inspired color scheme and styling
+//  Soothing monochrome color scheme for nighttime use
 //
 
 import SwiftUI
 
 extension Color {
-    // MARK: - Apple Health Inspired Colors
+    // MARK: - Monochrome Sleep Colors
     
     /// Pure black background for OLED
     static let sleepBackground = Color(hex: "#000000")
@@ -19,38 +19,38 @@ extension Color {
     /// Card border (subtle gray)
     static let sleepCardBorder = Color(hex: "#38383A")
     
-    /// Primary accent (Health app pink/coral)
-    static let sleepPrimary = Color(hex: "#FF2D55")
+    /// Primary accent (soft blue - easy on eyes)
+    static let sleepPrimary = Color(hex: "#5E81AC")
     
-    /// Secondary accent (Health app orange)
-    static let sleepSecondary = Color(hex: "#FF9500")
+    /// Secondary accent (muted blue-gray)
+    static let sleepSecondary = Color(hex: "#81A1C1")
     
-    /// Deep sleep indicator (Health app blue)
-    static let sleepDeepSleep = Color(hex: "#007AFF")
+    /// Deep sleep indicator (deep blue)
+    static let sleepDeepSleep = Color(hex: "#5E81AC")
     
-    /// Light sleep indicator (Health app purple)
-    static let sleepLightSleep = Color(hex: "#AF52DE")
+    /// Light sleep indicator (light blue-gray)
+    static let sleepLightSleep = Color(hex: "#88C0D0")
     
-    /// Awake indicator (Health app yellow)
-    static let sleepAwake = Color(hex: "#FFCC00")
+    /// Awake indicator (warm gray)
+    static let sleepAwake = Color(hex: "#D08770")
     
-    /// Success/positive (Health app green)
-    static let sleepSuccess = Color(hex: "#34C759")
+    /// Success/positive (muted teal)
+    static let sleepSuccess = Color(hex: "#A3BE8C")
     
-    /// Warning (Health app orange)
-    static let sleepWarning = Color(hex: "#FF9500")
+    /// Warning (muted orange)
+    static let sleepWarning = Color(hex: "#D08770")
     
-    /// Error/negative (Health app red)
-    static let sleepError = Color(hex: "#FF3B30")
+    /// Error/negative (muted red)
+    static let sleepError = Color(hex: "#BF616A")
     
-    /// Primary text (white)
-    static let sleepTextPrimary = Color(hex: "#FFFFFF")
+    /// Primary text (soft white)
+    static let sleepTextPrimary = Color(hex: "#ECEFF4")
     
-    /// Secondary text (light gray)
-    static let sleepTextSecondary = Color(hex: "#AEAEB2")
+    /// Secondary text (medium gray)
+    static let sleepTextSecondary = Color(hex: "#D8DEE9")
     
-    /// Tertiary text (medium gray)
-    static let sleepTextTertiary = Color(hex: "#636366")
+    /// Tertiary text (darker gray)
+    static let sleepTextTertiary = Color(hex: "#4C566A")
     
     // MARK: - Hex Color Initializer
     
