@@ -9,25 +9,19 @@ import SwiftUI
 
 struct CircularClockPicker: View {
     @Binding var selectedTime: Date
-    @State private var angle: Double = 0
+    @State private var dragAngle: Double = 0
     
-    private let clockSize: CGFloat = 280
+    private let clockSize: CGFloat = 260
+    private let lineWidth: CGFloat = 32
     
     var body: some View {
         ZStack {
-            // Outer ring
+            // Background circle
             Circle()
-                .stroke(
-                    LinearGradient(
-                        colors: [.sleepPrimary.opacity(0.3), .sleepSecondary.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 40
-                )
+                .stroke(Color.sleepCardBorder, lineWidth: lineWidth)
                 .frame(width: clockSize, height: clockSize)
             
-            // Progress ring
+            // Progress arc
             Circle()
                 .trim(from: 0, to: progressValue)
                 .stroke(
@@ -36,71 +30,100 @@ struct CircularClockPicker: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    style: StrokeStyle(lineWidth: 40, lineCap: .round)
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .frame(width: clockSize, height: clockSize)
                 .rotationEffect(.degrees(-90))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: dragAngle)
             
-            // Hour markers
-            ForEach(0..<12) { hour in
-                HourMarker(hour: hour, size: clockSize)
+            // Hour markers (simplified - only key hours)
+            ForEach([0, 3, 6, 9, 12, 15, 18, 21], id: \.self) { hour in
+                HourMarker(hour: hour, clockSize: clockSize)
             }
             
             // Center content
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text(selectedTime.formatted(date: .omitted, time: .shortened))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 56, weight: .bold, design: .rounded))
                     .foregroundColor(.sleepTextPrimary)
+                    .monospacedDigit()
                 
                 Text("Wake up time")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(.sleepTextSecondary)
                 
-                Text("30 min window")
-                    .font(.caption2)
-                    .foregroundColor(.sleepPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(Color.sleepPrimary.opacity(0.2))
-                    .cornerRadius(8)
+                HStack(spacing: 4) {
+                    Image(systemName: "moon.zzz.fill")
+                        .font(.caption2)
+                    Text("30 min window")
+                        .font(.caption)
+                }
+                .foregroundColor(.sleepPrimary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.sleepPrimary.opacity(0.15))
+                .cornerRadius(12)
             }
             
-            // Draggable handle
+            // Draggable knob
             Circle()
                 .fill(Color.white)
-                .frame(width: 24, height: 24)
-                .shadow(color: .sleepPrimary.opacity(0.5), radius: 8, x: 0, y: 4)
-                .offset(y: -clockSize / 2)
-                .rotationEffect(.degrees(angle))
+                .frame(width: 28, height: 28)
+                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                .overlay(
+                    Circle()
+                        .stroke(Color.sleepPrimary, lineWidth: 3)
+                )
+                .offset(y: -(clockSize / 2 + lineWidth / 2))
+                .rotationEffect(.degrees(dragAngle))
                 .gesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            let vector = CGVector(dx: value.location.x - clockSize / 2, dy: value.location.y - clockSize / 2)
-                            let radians = atan2(vector.dy, vector.dx)
-                            var newAngle = radians * 180 / .pi + 90
-                            if newAngle < 0 { newAngle += 360 }
-                            
-                            angle = newAngle
-                            updateTime(from: newAngle)
+                            updateAngle(at: value.location)
                         }
                 )
         }
+        .frame(width: clockSize + 60, height: clockSize + 60)
         .onAppear {
-            angle = angleFromTime(selectedTime)
+            dragAngle = calculateAngle(from: selectedTime)
         }
     }
     
     private var progressValue: Double {
-        angle / 360.0
+        (dragAngle + 90) / 360.0
     }
     
-    private func angleFromTime(_ time: Date) -> Double {
+    private func updateAngle(at location: CGPoint) {
+        // Calculate center of the circle
+        let center = CGPoint(x: (clockSize + 60) / 2, y: (clockSize + 60) / 2)
+        
+        // Calculate angle from center to touch point
+        let deltaX = location.x - center.x
+        let deltaY = location.y - center.y
+        
+        var angle = atan2(deltaY, deltaX) * 180 / .pi
+        angle += 90 // Adjust so 0° is at top
+        
+        if angle < 0 {
+            angle += 360
+        }
+        
+        // Snap to 15-minute intervals for smoother UX
+        let minuteAngle = angle / 360.0 * 1440.0 // Total minutes in day
+        let snappedMinutes = round(minuteAngle / 15.0) * 15.0
+        angle = (snappedMinutes / 1440.0) * 360.0
+        
+        dragAngle = angle
+        updateTime(from: angle)
+    }
+    
+    private func calculateAngle(from date: Date) -> Double {
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: time)
-        let minute = calendar.component(.minute, from: time)
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
         
         let totalMinutes = Double(hour * 60 + minute)
-        return (totalMinutes / 1440.0) * 360.0 // 1440 minutes in a day
+        return (totalMinutes / 1440.0) * 360.0
     }
     
     private func updateTime(from angle: Double) {
@@ -109,7 +132,12 @@ struct CircularClockPicker: View {
         let minutes = totalMinutes % 60
         
         let calendar = Calendar.current
-        if let newTime = calendar.date(bySettingHour: hours, minute: minutes, second: 0, of: selectedTime) {
+        var components = calendar.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hours
+        components.minute = minutes
+        components.second = 0
+        
+        if let newTime = calendar.date(from: components) {
             selectedTime = newTime
         }
     }
@@ -117,20 +145,30 @@ struct CircularClockPicker: View {
 
 struct HourMarker: View {
     let hour: Int
-    let size: CGFloat
+    let clockSize: CGFloat
+    
+    private var displayHour: String {
+        if hour == 0 {
+            return "12am"
+        } else if hour < 12 {
+            return "\(hour)am"
+        } else if hour == 12 {
+            return "12pm"
+        } else {
+            return "\(hour - 12)pm"
+        }
+    }
+    
+    private var angle: Double {
+        Double(hour) * 15.0 // 360° / 24 hours = 15° per hour
+    }
     
     var body: some View {
-        VStack {
-            Text("\(hour == 0 ? 12 : hour)")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.sleepTextTertiary)
-            Spacer()
-        }
-        .frame(height: size / 2 - 30)
-        .rotationEffect(.degrees(Double(hour) * 30))
-        .offset(y: -size / 2 + 15)
-        .rotationEffect(.degrees(Double(hour) * -30))
+        Text(displayHour)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.sleepTextTertiary)
+            .offset(y: -(clockSize / 2 + 35))
+            .rotationEffect(.degrees(angle))
     }
 }
 
