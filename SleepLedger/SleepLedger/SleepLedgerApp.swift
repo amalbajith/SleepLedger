@@ -2,8 +2,6 @@
 //  SleepLedgerApp.swift
 //  SleepLedger
 //
-//  Created by Amal on 31/12/25.
-//
 
 import SwiftUI
 import SwiftData
@@ -12,7 +10,8 @@ import SwiftData
 struct SleepLedgerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            SleepSession.self,
+            MovementData.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +24,8 @@ struct SleepLedgerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
+                .preferredColorScheme(.dark)
         }
         .modelContainer(sharedModelContainer)
     }
