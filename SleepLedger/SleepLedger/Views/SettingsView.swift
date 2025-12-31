@@ -93,7 +93,7 @@ struct SettingsView: View {
             Toggle(isOn: $smartAlarmEnabled) {
                 HStack {
                     Image(systemName: "brain.head.profile.fill")
-                        .foregroundColor(.sleepSecondary)
+                        .foregroundColor(.sleepPrimaryGlow)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Smart Alarm")
                             .foregroundColor(.sleepTextPrimary)
@@ -244,7 +244,7 @@ struct SettingsView: View {
             } label: {
                 HStack {
                     Image(systemName: "info.circle.fill")
-                        .foregroundColor(.sleepSecondary)
+                        .foregroundColor(.sleepPrimaryGlow)
                     Text("About SleepLedger")
                         .foregroundColor(.sleepTextPrimary)
                     Spacer()
@@ -296,7 +296,7 @@ struct DataPrivacyView: View {
                 }
                 
                 Divider()
-                    .background(Color.sleepCardBorder)
+                    .background(Color.sleepGlassBorder)
                 
                 PrivacyFeature(
                     icon: "iphone.and.arrow.forward",
@@ -393,7 +393,7 @@ struct ExportDataView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [.sleepPrimary, .sleepSecondary],
+                                colors: [.sleepPrimary, .sleepPrimaryGlow],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -423,7 +423,7 @@ struct ExportDataView: View {
                     .padding()
                     .background(
                         LinearGradient(
-                            colors: [.sleepPrimary, .sleepSecondary],
+                            colors: [.sleepPrimary, .sleepPrimaryGlow],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -493,7 +493,7 @@ struct AboutView: View {
                             .font(.system(size: 80))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.sleepPrimary, .sleepSecondary],
+                                    colors: [.sleepPrimary, .sleepPrimaryGlow],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
