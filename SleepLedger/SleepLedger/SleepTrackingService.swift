@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import UserNotifications
+import Combine
 
 class SleepTrackingService: ObservableObject {
     // MARK: - Properties

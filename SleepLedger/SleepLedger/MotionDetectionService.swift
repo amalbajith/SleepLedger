@@ -95,7 +95,8 @@ class MotionDetectionService: ObservableObject {
         // Start periodic analysis timer (every minute)
         analysisTimer = Timer.scheduledTimer(withTimeInterval: analysisWindowSize, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.analyzeMovementWindow()
+                guard let self = self else { return }
+                self.analyzeMovementWindow()
             }
         }
         
