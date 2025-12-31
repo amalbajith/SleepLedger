@@ -9,7 +9,6 @@ import Foundation
 import CoreMotion
 import Combine
 
-@MainActor
 class MotionDetectionService: ObservableObject {
     // MARK: - Properties
     
