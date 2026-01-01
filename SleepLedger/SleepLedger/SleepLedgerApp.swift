@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct SleepLedgerApp: App {
@@ -23,6 +24,7 @@ struct SleepLedgerApp: App {
                         .preferredColorScheme(.dark)
                         .onAppear {
                             initializeStore()
+                            requestNotificationPermission()
                         }
                 }
             }
@@ -37,6 +39,18 @@ struct SleepLedgerApp: App {
             _ = await MainActor.run {
                 _ = ModelContainer.shared
                 isStoreLoaded = true
+            }
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                print("✅ Notification permission granted")
+            } else if let error = error {
+                print("❌ Notification permission error: \(error.localizedDescription)")
+            } else {
+                print("⚠️ Notification permission denied")
             }
         }
     }

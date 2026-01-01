@@ -8,15 +8,18 @@
 import Foundation
 import CoreMotion
 import Combine
+import UIKit
 
 class MotionDetectionService: ObservableObject {
     // MARK: - Properties
     
     private let motionManager = CMMotionManager()
     private let operationQueue = OperationQueue()
+    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     
     @Published var isTracking = false
-    @Published var currentMovementIntensity: Double = 0.0
+    @Published var currentMovementIntensity: Double = 0.0 // Minute-average (for data)
+    @Published var liveActivityLevel: Double = 0.0 // Instantaneous (for UI)
     @Published var sleepStage: SleepStage = .awake
     
     /// Callback for when new movement data is available
@@ -91,6 +94,11 @@ class MotionDetectionService: ObservableObject {
             }
         }
         
+        // Start background task to keep app alive
+        backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in
+            self?.endBackgroundTask()
+        }
+        
         // Start periodic analysis timer (every minute)
         analysisTimer = Timer.scheduledTimer(withTimeInterval: analysisWindowSize, repeats: true) { [weak self] _ in
             guard let self = self else { return }
@@ -100,7 +108,7 @@ class MotionDetectionService: ObservableObject {
         }
         
         isTracking = true
-        print("✅ Motion tracking started")
+        print("✅ Motion tracking started (Background Task ID: \(backgroundTask))")
     }
     
     /// Stop tracking movement
@@ -112,13 +120,24 @@ class MotionDetectionService: ObservableObject {
         analysisTimer = nil
         accelerometerBuffer.removeAll()
         
+        endBackgroundTask()
+        
         isTracking = false
         print("🛑 Motion tracking stopped")
+    }
+    
+    private func endBackgroundTask() {
+        if backgroundTask != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            backgroundTask = .invalid
+        }
     }
     
     // MARK: - Private Methods
     
     /// Process incoming accelerometer data
+    private var sampleCounter = 0
+    
     private func processAccelerometerData(_ data: CMAccelerometerData) {
         let reading = AccelerometerReading(
             timestamp: Date(),
@@ -128,6 +147,16 @@ class MotionDetectionService: ObservableObject {
         )
         
         accelerometerBuffer.append(reading)
+        
+        // Update Live UI (throttled to ~10Hz)
+        sampleCounter += 1
+        if sampleCounter % 5 == 0 {
+            let mag = sqrt(reading.x*reading.x + reading.y*reading.y + reading.z*reading.z)
+            // Deviation from 1g (gravity)
+            let activity = abs(mag - 1.0)
+            // Amplify for visualization
+            self.liveActivityLevel = min(1.0, activity * 5.0)
+        }
         
         // Keep buffer size manageable (store last 2 minutes of data)
         let maxBufferSize = Int(samplingFrequency * analysisWindowSize * 2)

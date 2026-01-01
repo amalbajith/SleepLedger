@@ -2,15 +2,14 @@ import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
-    // MARK: - Persistent Settings
-    @AppStorage("hapticFeedback") private var hapticFeedback = true
+    @Environment(\.modelContext) private var modelContext
+// MARK: - Persistent Settings
     @AppStorage("sleepGoalHours") private var sleepGoalHours: Double = 8.0
-    @AppStorage("targetSleepEntryTime") private var targetSleepEntryTime: Double = 22.5 // 10:30 PM represented as hours
+    @AppStorage("trackingMode") private var trackingMode: String = "Advanced"
     
     // MARK: - State
     @State private var showingExportSheet = false
     @State private var showingAboutSheet = false
-    @State private var showingSleepEntryPicker = false
     
     var body: some View {
         ZStack {
@@ -26,7 +25,21 @@ struct SettingsView: View {
                     VStack(spacing: 24) {
                         // General Section
                         buildSection(title: "GENERAL") {
-                            ToggleRow(icon: "iphone.gen3", iconColor: Color(hex: "5C3B4B"), title: "Haptic Feedback", isOn: $hapticFeedback)
+                            // Tracking Mode Picker
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Tracking Mode")
+                                    .font(.body)
+                                    .foregroundStyle(.white)
+                                
+                                Picker("Tracking Mode", selection: $trackingMode) {
+                                    Text("Basic (Timer Only)").tag("Basic")
+                                    Text("Advanced (Sensors)").tag("Advanced")
+                                }
+                                .pickerStyle(.segmented)
+                                .colorMultiply(Color(hex: "8B5CF6")) // Tint doesn't work well on segmented in dark mode sometimes, this helps
+                            }
+                            .padding()
+                            
                             Divider().overlay(Color.white.opacity(0.1))
                             
                             // Sleep Goal Slider
@@ -48,6 +61,23 @@ struct SettingsView: View {
                             .padding()
                         }
                         
+                        // Debug Section (Hidden in Production normally, but user requested test)
+                        buildSection(title: "DEBUG / TEST") {
+                            Button {
+                                AudioManager.shared.playAlarm()
+                            } label: {
+                                SettingsRow(icon: "speaker.wave.3.fill", iconColor: Color.blue, title: "Test Alarm Sound")
+                            }
+                            
+                            Divider().overlay(Color.white.opacity(0.1))
+                            
+                            Button {
+                                AudioManager.shared.stopAlarm()
+                            } label: {
+                                SettingsRow(icon: "stop.fill", iconColor: Color.orange, title: "Stop Alarm Sound")
+                            }
+                        }
+                        
                         // Data Management Section
                         buildSection(title: "DATA MANAGEMENT") {
                             Button {
@@ -55,41 +85,21 @@ struct SettingsView: View {
                             } label: {
                                 SettingsRow(icon: "square.and.arrow.up", iconColor: Color(hex: "2C3E50"), title: "Export Data")
                             }
-                        }
-                        
-                        // Reminders Section
-                        buildSection(title: "REMINDERS") {
+                            
+                            Divider().overlay(Color.white.opacity(0.1))
+                            
                             Button {
-                                withAnimation {
-                                    showingSleepEntryPicker.toggle()
-                                }
+                                generateFakeHistory()
                             } label: {
-                                SettingsRow(
-                                    icon: "moon.zzz.fill",
-                                    iconColor: Color(hex: "342E40"),
-                                    title: "Sleep Entry Target",
-                                    value: formatTime(from: targetSleepEntryTime),
-                                    valueIsHighlight: true
-                                )
+                                SettingsRow(icon: "flask.fill", iconColor: Color(hex: "5C3B4B"), title: "Generate Fake Data (Testing)")
                             }
-                            if showingSleepEntryPicker {
-                                Divider().overlay(Color.white.opacity(0.1))
-                                DatePicker("", selection: Binding(
-                                    get: {
-                                        let hour = Int(targetSleepEntryTime)
-                                        let minute = Int((targetSleepEntryTime.truncatingRemainder(dividingBy: 1) * 60).rounded())
-                                        return Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
-                                    },
-                                    set: { newDate in
-                                        let components = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                                        if let h = components.hour, let m = components.minute {
-                                            targetSleepEntryTime = Double(h) + Double(m) / 60.0
-                                        }
-                                    }
-                                ), displayedComponents: .hourAndMinute)
-                                .datePickerStyle(.wheel)
-                                .labelsHidden()
-                                .environment(\.colorScheme, .dark)
+                            
+                            Divider().overlay(Color.white.opacity(0.1))
+                            
+                            Button {
+                                resetHistory()
+                            } label: {
+                                SettingsRow(icon: "trash.fill", iconColor: Color(hex: "FF4B4B"), title: "Reset All History")
                             }
                         }
                         
@@ -98,7 +108,7 @@ struct SettingsView: View {
                             Button {
                                 showingAboutSheet = true
                             } label: {
-                                SettingsRow(icon: "info.circle.fill", iconColor: Color(hex: "3E3E3E"), title: "Version", value: "v1.0.2")
+                                SettingsRow(icon: "info.circle.fill", iconColor: Color(hex: "3E3E3E"), title: "Version", value: "v1.2.0 (Build 6)")
                             }
                         }
                         
@@ -115,7 +125,7 @@ struct SettingsView: View {
                             .background(Color(hex: "9F7AEA").opacity(0.15))
                             .clipShape(Capsule())
                             
-                            Text("SleepLedger Inc. © 2024")
+                            Text("SleepLedger Inc. © 2025")
                                 .font(.caption)
                                 .foregroundStyle(Color.gray)
                         }
@@ -183,6 +193,85 @@ struct SettingsView: View {
         let minute = Int((hours.truncatingRemainder(dividingBy: 1) * 60).rounded())
         let date = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
         return date.formatted(date: .omitted, time: .shortened)
+    }
+    
+    // MARK: - Testing Methods
+    
+    func generateFakeHistory() {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Generate last 30 days of data
+        for dayOffset in 1...30 {
+            // Random start time: 10 PM to 2 AM (previous day)
+            let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
+            let hourOffset = Int.random(in: -2...2) // 10 PM (-2) to 2 AM (+2)
+            
+            var components = calendar.dateComponents([.year, .month, .day], from: date)
+            components.hour = 24 + hourOffset // Handle day boundary roughly
+            components.minute = Int.random(in: 0...59)
+            
+            guard let startTime = calendar.date(from: components) else { continue }
+            
+            // Random duration: 5 to 9.5 hours
+            let durationHours = Double.random(in: 5.0...9.5)
+            let endTime = startTime.addingTimeInterval(durationHours * 3600)
+            
+            let session = SleepSession(
+                startTime: startTime,
+                sleepGoalHours: sleepGoalHours,
+                smartAlarmEnabled: Bool.random()
+            )
+            session.endTime = endTime
+            session.isActive = false
+            
+            // Generate movement data
+            // We need multiple data points to simulate stages
+            // Sample every 15 mins = 4 points per hour
+            let numPoints = Int(durationHours * 4)
+            var currentDataTime = startTime
+            
+            for _ in 0..<numPoints {
+                // Determine stage by chance to simulate cycles
+                // 50% light (0.3-0.7), 25% deep (<0.3), 25% awake/restless (>0.7)
+                let roll = Double.random(in: 0...1)
+                var intensity: Double
+                
+                if roll < 0.25 { // Deep
+                    intensity = Double.random(in: 0.0...0.29)
+                } else if roll < 0.85 { // Light (increased ratio for realism)
+                    intensity = Double.random(in: 0.3...0.69)
+                } else { // Awake
+                    intensity = Double.random(in: 0.7...1.0)
+                }
+                
+                let movement = MovementData(
+                    timestamp: currentDataTime,
+                    movementIntensity: intensity,
+                    durationMinutes: 15.0
+                )
+                session.movementData.append(movement)
+                currentDataTime = currentDataTime.addingTimeInterval(15 * 60)
+            }
+            
+            session.calculateSleepMetrics()
+            session.calculateSleepDebt()
+            
+            modelContext.insert(session)
+        }
+        
+        try? modelContext.save()
+        print("✅ Fake history generated")
+    }
+    
+    func resetHistory() {
+        do {
+            try modelContext.delete(model: SleepSession.self)
+            try modelContext.save()
+            print("🗑️ History reset")
+        } catch {
+            print("❌ Error resetting history: \(error)")
+        }
     }
 }
 
@@ -360,7 +449,7 @@ struct AboutView: View {
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
                         
-                        Text("Version 1.0.2")
+                        Text("Version 1.2.0")
                             .foregroundStyle(.gray)
                         
                         VStack(alignment: .leading, spacing: 16) {

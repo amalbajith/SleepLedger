@@ -123,16 +123,35 @@ final class SleepSession {
     }
     
     /// Calculate sleep quality and sleep stage durations
-    private func calculateSleepMetrics() {
-        guard !movementData.isEmpty else { return }
+    /// Calculate sleep quality and sleep stage durations
+    func calculateSleepMetrics() {
+        // Basic Mode (No Motion Data)
+        if movementData.isEmpty {
+            // If we have duration but no data, calculate score based purely on duration
+            if let hours = durationInHours {
+                // Duration Score (100% weight in Basic Mode)
+                let durationScore = calculateDurationPenalty(hours: hours) * 100.0
+                self.sleepQualityScore = min(100, durationScore)
+            } else {
+                self.sleepQualityScore = 0
+            }
+            
+            // No stages tracked
+            self.lightSleepDuration = 0
+            self.deepSleepDuration = 0
+            return
+        }
         
+        // Advanced Mode (Motion Data Exists)
         var lightSleepMinutes: Double = 0
         var deepSleepMinutes: Double = 0
         var totalMovement: Double = 0
+        var totalTrackedMinutes: Double = 0
         
         // Analyze movement data to determine sleep stages
         for data in movementData {
             totalMovement += data.movementIntensity
+            totalTrackedMinutes += data.durationMinutes
             
             // Deep sleep: very low movement (< 0.3)
             // Light sleep: moderate movement (0.3 - 0.7)
@@ -149,26 +168,39 @@ final class SleepSession {
         
         // Calculate quality score (0-100)
         let totalSleepMinutes = lightSleepMinutes + deepSleepMinutes
-        if totalSleepMinutes > 0 {
-            let deepSleepPercentage = deepSleepMinutes / totalSleepMinutes
-            let averageMovement = totalMovement / Double(movementData.count)
+        
+        if totalTrackedMinutes > 0 {
+            // 1. Efficiency Score (30%)
+            // Ratio of time asleep vs total time in bed
+            let efficiency = totalSleepMinutes / totalTrackedMinutes
+            let efficiencyScore = efficiency * 30.0
             
-            // Base quality = 60% deep sleep ratio, 20% low movement
-            let deepSleepScore = deepSleepPercentage * 60
-            let movementScore = max(0, (1.0 - averageMovement) * 20)
-            let baseQuality = deepSleepScore + movementScore
-            
-            // Duration penalty: 20% of score based on duration
-            guard let hours = durationInHours else { 
-                self.sleepQualityScore = min(100, baseQuality)
-                return 
+            // 2. Deep Sleep Score (30%)
+            // Target: 25% of sleep time should be deep sleep
+            // If totalSleepMinutes is 0, this is 0
+            var deepSleepScore: Double = 0
+            if totalSleepMinutes > 0 {
+                let deepSleepRatio = deepSleepMinutes / totalSleepMinutes
+                // Normalize: 25% ratio gives full score (1.0). Cap at 1.0.
+                let normalizedRatio = min(1.0, deepSleepRatio / 0.25)
+                deepSleepScore = normalizedRatio * 30.0
             }
             
-            let durationPenalty = calculateDurationPenalty(hours: hours)
-            let durationScore = durationPenalty * 20
+            // 3. Duration Score (30%)
+            // Based on goal (usually 8 hours)
+            var durationScore: Double = 0
+            if let hours = durationInHours {
+                 durationScore = calculateDurationPenalty(hours: hours) * 30.0
+            }
             
-            // Final quality score
-            self.sleepQualityScore = min(100, baseQuality + durationScore)
+            // 4. Restfulness Score (10%)
+            // Based on average movement intensity
+            let averageMovement = totalMovement / Double(movementData.count)
+            let movementScore = max(0, (1.0 - averageMovement) * 10.0)
+            
+            // Total Score
+            let totalScore = efficiencyScore + deepSleepScore + durationScore + movementScore
+            self.sleepQualityScore = min(100, totalScore)
         }
     }
     
@@ -202,7 +234,7 @@ final class SleepSession {
     
     /// Calculate sleep debt based on goal
     /// Only calculates debt for sessions longer than 1 hour to prevent abuse
-    private func calculateSleepDebt() {
+    func calculateSleepDebt() {
         guard let hours = durationInHours else { return }
         
         // Ignore sessions shorter than 1 hour (prevents rapid punch in/out creating fake deficit)

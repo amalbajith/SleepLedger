@@ -12,10 +12,19 @@ struct SleepView: View {
     @State private var currentTime = Date()
     @State private var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
+    // Session Config
+    @State private var enableSmartAlarm = false
+    @State private var targetWakeTime = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date().addingTimeInterval(86400)) ?? Date()
+    
     // Layout Constants
     private let statsRowOffset: CGFloat = 90 // Adjust this value to move the stats row Up (-) or Down (+)
     private let ringOffset: CGFloat = 50 // Adjust this value to move the Ring Up (-) or Down (+)
     private let headerTopPadding: CGFloat = 10 // Adjust this value to move the Header Down (+)
+    private let ringDiameter: CGFloat = 100 // Adjust this value to change the Ring Size (Diameter)
+    
+    // Theme
+    // Alternative to Purple ("6B35F6"): "3D5AFE" (Indigo), "00E5FF" (Cyan), "FF4081" (Pink)
+    private let accentColor = Color(hex: "3D5AFE") // Currently: Indigo/Blue
     
     init() {
         let context = ModelContext(ModelContainer.shared)
@@ -47,15 +56,45 @@ struct SleepView: View {
                             .zIndex(0)
                         
                         // Check tracking state
-                        if sleepManager.isTracking {
-                            activeSleepView
-                        } else {
+                        if !sleepManager.isTracking {
                             statsRow
                                 .padding(.top, statsRowOffset) // Move up to overlay the ring
                                 .zIndex(1)
                         }
                         
-                        Spacer().frame(height: 20)
+                        Spacer()
+                        
+                        // Alarm Configuration
+                        if !sleepManager.isTracking {
+                            VStack(spacing: 12) {
+                                Toggle(isOn: $enableSmartAlarm) {
+                                    HStack {
+                                        Image(systemName: enableSmartAlarm ? "alarm.fill" : "alarm")
+                                            .foregroundStyle(enableSmartAlarm ? .white : .gray)
+                                        Text("Smart Alarm")
+                                            .foregroundStyle(.white)
+                                            .fontWeight(.medium)
+                                    }
+                                }
+                                .toggleStyle(SwitchToggleStyle(tint: accentColor))
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                
+                                if enableSmartAlarm {
+                                    DatePicker("Wake Up Time", selection: $targetWakeTime, displayedComponents: .hourAndMinute)
+                                        .datePickerStyle(.compact)
+                                        .labelsHidden()
+                                        .environment(\.colorScheme, .dark)
+                                        .padding(.vertical, 4)
+                                }
+                            }
+                            .padding(.horizontal, 40)
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                        
+                        Spacer().frame(height: 80)
                         
                         pulseButton
                             .padding(.bottom, 20)
@@ -86,15 +125,6 @@ struct SleepView: View {
             }
             
             Spacer()
-            
-            Button(action: {}) {
-                Image(systemName: "bell.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .padding(12)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
-            }
         }
         .padding(.horizontal)
         .padding(.top, 10)
@@ -116,9 +146,7 @@ struct SleepView: View {
             Circle()
                 .stroke(
                     LinearGradient(
-                        colors: isSurplus 
-                            ? [Color(hex: "4CD964"), Color(hex: "34D399")] 
-                            : [Color(hex: "FF4B4B"), Color(hex: "FF8F70")],
+                        colors: getRingGradientColors(debt: debt),
                         startPoint: .bottomLeading,
                         endPoint: .topTrailing
                     ),
@@ -175,7 +203,8 @@ struct SleepView: View {
                 }
             }
         }
-        .frame(height: 260) // Standard size for full circle
+        .frame(width: sleepManager.isTracking ? 280 : 220, height: sleepManager.isTracking ? 280 : 220)
+        .animation(.spring(response: 0.6, dampingFraction: 0.7), value: sleepManager.isTracking)
     }
     
     var statsRow: some View {
@@ -191,27 +220,7 @@ struct SleepView: View {
         .padding(.horizontal)
     }
     
-    var activeSleepView: some View {
-        VStack {
-            Text("Tracking Sleep Stages...")
-                .font(.headline)
-                .foregroundStyle(.white.opacity(0.8))
-            
-            // Placeholder for real-time accelerometer visualization
-            HStack(spacing: 4) {
-                ForEach(0..<10) { _ in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(hex: "6B35F6"))
-                        .frame(width: 4, height: CGFloat.random(in: 10...30))
-                }
-            }
-            .frame(height: 40)
-        }
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .padding(.horizontal)
-    }
+
     
     func statCard(title: String, value: String, color: Color) -> some View {
         VStack(spacing: 8) {
@@ -241,16 +250,19 @@ struct SleepView: View {
                 if sleepManager.isTracking {
                     sleepManager.punchOut()
                 } else {
-                    sleepManager.punchIn()
+                    sleepManager.punchIn(
+                        smartAlarmEnabled: enableSmartAlarm,
+                        targetWakeTime: enableSmartAlarm ? targetWakeTime : nil
+                    )
                 }
             }
         }) {
             ZStack {
                 Circle()
-                    .fill(sleepManager.isTracking ? Color(hex: "FF4B4B") : Color(hex: "6B35F6"))
+                    .fill(sleepManager.isTracking ? Color(hex: "FF4B4B") : accentColor)
                     .frame(width: 80, height: 80)
                     .shadow(
-                        color: (sleepManager.isTracking ? Color(hex: "FF4B4B") : Color(hex: "6B35F6")).opacity(0.4),
+                        color: (sleepManager.isTracking ? Color(hex: "FF4B4B") : accentColor).opacity(0.4),
                         radius: 20, x: 0, y: 10
                     )
                 
@@ -292,13 +304,42 @@ struct SleepView: View {
         let m = Int((hours - Double(h)) * 60)
         return "\(h)h \(m)m"
     }
+
+    private func getRingGradientColors(debt: Double) -> [Color] {
+        // Surplus (Positive Debt)
+        if debt >= 0 {
+            if debt > 5.0 {
+                // High Surplus: Very Light/Bright Green (Faded to Green)
+                return [Color(hex: "69F0AE"), Color(hex: "B9F6CA")]
+            } else if debt > 2.0 {
+                // Medium Surplus: Standard Vibrant Green
+                return [Color(hex: "00C853"), Color(hex: "69F0AE")]
+            } else {
+                // Low Surplus: Darker/Standard Green
+                return [Color(hex: "2E7D32"), Color(hex: "00C853")]
+            }
+        } 
+        // Deficit (Negative Debt)
+        else {
+            if debt < -5.0 {
+                // High Deficit: Vibrant Deep Red (Less Black)
+                return [Color(hex: "C62828"), Color(hex: "FF5252")] 
+            } else if debt < -2.0 {
+                // Medium Deficit: Standard Red
+                return [Color(hex: "D32F2F"), Color(hex: "F44336")]
+            } else {
+                // Low Deficit: Lighter Red/Orange-ish
+                return [Color(hex: "EF5350"), Color(hex: "FF8A80")]
+            }
+        }
+    }
 }
 
 extension View {
     func purpleIconStyle() -> some View {
         self
             .font(.system(size: 14))
-            .foregroundStyle(Color(hex: "6B35F6"))
+            .foregroundStyle(Color(hex: "3D5AFE"))
     }
 }
 

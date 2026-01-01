@@ -9,15 +9,18 @@ import Foundation
 import SwiftData
 import UserNotifications
 import Combine
+import UIKit
 
 class SleepTrackingService: ObservableObject {
     // MARK: - Properties
     
     @Published var currentSession: SleepSession?
     @Published var isTracking = false
+    @Published var liveActivityLevel: Double = 0.0
     
-    private let motionService: MotionDetectionService
+    let motionService: MotionDetectionService
     private let modelContext: ModelContext
+    private var cancellables = Set<AnyCancellable>()
     
     /// User's default sleep goal (can be customized per session)
     var defaultSleepGoalHours: Double = 8.0
@@ -34,8 +37,27 @@ class SleepTrackingService: ObservableObject {
                 self?.handleMovementData(movementData)
             }
         }
+        
+        // Bind live activity for UI
+        motionService.$liveActivityLevel
+            .receive(on: RunLoop.main)
+            .assign(to: \.liveActivityLevel, on: self)
+            .store(in: &cancellables)
+        
+        // Restore any active session from a previous run (crash/kill recovery)
+        restoreActiveSession()
     }
     
+    // MARK: - Private Properties
+    private var alarmTimer: Timer?
+    
+    // MARK: - Enums
+    
+    enum TrackingMode: String {
+        case basic = "Basic"
+        case advanced = "Advanced"
+    }
+
     // MARK: - Public Methods
     
     /// Punch in - Start a new sleep session
@@ -52,17 +74,38 @@ class SleepTrackingService: ObservableObject {
             targetWakeTime: targetWakeTime
         )
         
+        // Check Tracking Mode
+        let modeString = UserDefaults.standard.string(forKey: "trackingMode") ?? TrackingMode.advanced.rawValue
+        let mode = TrackingMode(rawValue: modeString) ?? .advanced
+        
         modelContext.insert(session)
         currentSession = session
         
-        // Start motion tracking
-        motionService.startTracking()
+        // Start motion tracking ONLY in Advanced Mode
+        if mode == .advanced {
+            motionService.startTracking()
+            // Start silent audio to keep app alive in background (Advanced only needs this for sensors)
+            AudioManager.shared.startSilentAudio()
+        }
+        
+        // Start alarm check timer (for Basic Mode & Fallback)
+        if targetWakeTime != nil {
+            alarmTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+                Task { @MainActor in
+                    self?.checkAlarmTimerTick()
+                }
+            }
+        }
+        
+        // Disable auto-lock to keep app active (clock mode support & reliability)
+        UIApplication.shared.isIdleTimerDisabled = true
+        
         isTracking = true
         
         // Save context
         try? modelContext.save()
         
-        print("✅ Sleep session started at \(session.startTime)")
+        print("✅ Sleep session started at \(session.startTime) [Mode: \(mode.rawValue)]")
         
         // Schedule smart alarm if enabled
         if smartAlarmEnabled, let wakeTime = targetWakeTime {
@@ -79,6 +122,18 @@ class SleepTrackingService: ObservableObject {
         
         // Stop motion tracking
         motionService.stopTracking()
+        
+        // Stop background audio
+        AudioManager.shared.stopSilentAudio()
+        AudioManager.shared.stopAlarm()
+        
+        // Stop timer
+        alarmTimer?.invalidate()
+        alarmTimer = nil
+        
+        // Re-enable auto-lock (save screen/battery)
+        UIApplication.shared.isIdleTimerDisabled = false
+        
         isTracking = false
         
         // End the session
@@ -217,6 +272,33 @@ class SleepTrackingService: ObservableObject {
     
     // MARK: - Private Methods
     
+    /// Restore active session from database if app was killed/restarted
+    private func restoreActiveSession() {
+        let descriptor = FetchDescriptor<SleepSession>(
+            predicate: #Predicate { session in
+                session.isActive == true
+            }
+        )
+        
+        do {
+            let activeSessions = try modelContext.fetch(descriptor)
+            if let session = activeSessions.first {
+                print("🔄 Restoring active session from \(session.startTime)")
+                self.currentSession = session
+                self.isTracking = true
+                
+                // Resume sensors if in Advanced Mode
+                let modeString = UserDefaults.standard.string(forKey: "trackingMode") ?? TrackingMode.advanced.rawValue
+                if let mode = TrackingMode(rawValue: modeString), mode == .advanced {
+                    print("🔄 Resuming motion tracking...")
+                    motionService.startTracking()
+                }
+            }
+        } catch {
+            print("❌ Error restoring session: \(error)")
+        }
+    }
+    
     /// Handle incoming movement data from motion service
     private func handleMovementData(_ movementData: MovementData) {
         guard let session = currentSession else { return }
@@ -260,6 +342,7 @@ class SleepTrackingService: ObservableObject {
     
     /// Check if we should trigger the smart alarm based on current movement
     private func checkSmartAlarmTrigger(for session: SleepSession) {
+        guard session.actualWakeTime == nil else { return } // Already triggered
         guard let targetWake = session.targetWakeTime else { return }
         
         let now = Date()
@@ -275,9 +358,24 @@ class SleepTrackingService: ObservableObject {
         }
     }
     
+    /// Periodic timer check for alarm (Fallback & Basic Mode)
+    private func checkAlarmTimerTick() {
+        guard let session = currentSession, let targetWake = session.targetWakeTime else { return }
+        guard session.actualWakeTime == nil else { return } // Already triggered
+        
+        // If we passed the target time, FORCE WAKE UP
+        if Date() >= targetWake {
+            print("⏰ Reached target wake time. Forcing alarm.")
+            triggerSmartAlarm(for: session)
+        }
+    }
+    
     /// Trigger the smart alarm immediately
     private func triggerSmartAlarm(for session: SleepSession) {
         session.actualWakeTime = Date()
+        
+        // Play Audio Alarm
+        AudioManager.shared.playAlarm()
         
         let content = UNMutableNotificationContent()
         content.title = "SleepLedger Smart Alarm"
@@ -294,5 +392,8 @@ class SleepTrackingService: ObservableObject {
     private func cancelSmartAlarm() {
         guard let session = currentSession else { return }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["smart_alarm_\(session.id.uuidString)"])
+        
+        // Stop audio if playing
+        AudioManager.shared.stopAlarm()
     }
 }
