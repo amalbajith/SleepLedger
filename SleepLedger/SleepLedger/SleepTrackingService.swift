@@ -320,7 +320,7 @@ class SleepTrackingService: ObservableObject {
     /// Schedule smart alarm notification
     private func scheduleSmartAlarm(for session: SleepSession, targetWakeTime: Date) {
         let content = UNMutableNotificationContent()
-        content.title = "SleepLedger Smart Alarm"
+        content.title = "Orbit Smart Alarm"
         content.body = "Time to wake up! You're in light sleep."
         content.sound = .default
         content.categoryIdentifier = "SMART_ALARM"
@@ -378,7 +378,7 @@ class SleepTrackingService: ObservableObject {
         AudioManager.shared.playAlarm()
         
         let content = UNMutableNotificationContent()
-        content.title = "SleepLedger Smart Alarm"
+        content.title = "Orbit Smart Alarm"
         content.body = "Perfect timing! You're in light sleep. Time to wake up! 🌅"
         content.sound = .default
         

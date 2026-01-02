@@ -125,7 +125,7 @@ struct SettingsView: View {
                             .background(Color(hex: "9F7AEA").opacity(0.15))
                             .clipShape(Capsule())
                             
-                            Text("SleepLedger Inc. © 2025")
+                            Text("Orbit Inc. © 2025")
                                 .font(.caption)
                                 .foregroundStyle(Color.gray)
                         }
@@ -444,7 +444,7 @@ struct AboutView: View {
                             .foregroundStyle(Color(hex: "6B35F6"))
                             .padding(.top, 40)
                         
-                        Text("SleepLedger")
+                        Text("Orbit")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)

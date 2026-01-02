@@ -65,7 +65,7 @@ struct SplashScreenView: View {
                     .font(.system(size: 60))
                     .foregroundColor(.sleepPrimary)
                 
-                Text("SleepLedger")
+                Text("Orbit")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.white)
                 

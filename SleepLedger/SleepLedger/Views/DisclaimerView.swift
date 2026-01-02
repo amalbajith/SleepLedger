@@ -33,7 +33,7 @@ struct DisclaimerView: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                 
-                Text("SleepLedger is designed for informational purposes only. It is not a medical device and should not be used to diagnose, treat, cure, or prevent any medical conditions or sleep disorders.")
+                Text("Orbit is designed for informational purposes only. It is not a medical device and should not be used to diagnose, treat, cure, or prevent any medical conditions or sleep disorders.")
                     .foregroundStyle(.gray)
                 
                 Text("Consult a Professional")

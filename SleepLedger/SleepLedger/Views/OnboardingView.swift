@@ -69,7 +69,7 @@ struct OnboardingView: View {
                     .font(.title2)
                     .foregroundColor(.sleepTextSecondary)
                 
-                Text("SleepLedger")
+                Text("Orbit")
                     .font(.system(size: 48, weight: .bold))
                     .foregroundColor(.sleepTextPrimary)
                     .minimumScaleFactor(0.5)
